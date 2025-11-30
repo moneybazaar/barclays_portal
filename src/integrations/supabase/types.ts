@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      holdings: {
+        Row: {
+          asset_type: Database["public"]["Enums"]["asset_type"]
+          created_at: string
+          currency: string | null
+          current_price: number
+          id: string
+          institution: string | null
+          maturity_date: string | null
+          name: string
+          principal: number | null
+          purchase_price: number
+          rate: number | null
+          risk_level: string | null
+          shares: number | null
+          ticker: string | null
+          units: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_type: Database["public"]["Enums"]["asset_type"]
+          created_at?: string
+          currency?: string | null
+          current_price: number
+          id?: string
+          institution?: string | null
+          maturity_date?: string | null
+          name: string
+          principal?: number | null
+          purchase_price: number
+          rate?: number | null
+          risk_level?: string | null
+          shares?: number | null
+          ticker?: string | null
+          units?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_type?: Database["public"]["Enums"]["asset_type"]
+          created_at?: string
+          currency?: string | null
+          current_price?: number
+          id?: string
+          institution?: string | null
+          maturity_date?: string | null
+          name?: string
+          principal?: number | null
+          purchase_price?: number
+          rate?: number | null
+          risk_level?: string | null
+          shares?: number | null
+          ticker?: string | null
+          units?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -46,7 +106,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      asset_type: "stock" | "bond" | "fund" | "cd"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -173,6 +233,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      asset_type: ["stock", "bond", "fund", "cd"],
+    },
   },
 } as const

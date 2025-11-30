@@ -25,10 +25,12 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
 
     try {
       if (mode === "signup") {
+        const redirectUrl = `${window.location.origin}/dashboard`;
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
+            emailRedirectTo: redirectUrl,
             data: {
               full_name: fullName,
             },
@@ -39,9 +41,9 @@ export const AuthForm = ({ mode }: AuthFormProps) => {
 
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account.",
+          description: "Welcome to your portfolio dashboard.",
         });
-        navigate("/login");
+        navigate("/dashboard");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
