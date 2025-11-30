@@ -1,24 +1,30 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useHoldings, Holding } from "@/hooks/useHoldings";
+import { useHoldings, Holding, AssetType } from "@/hooks/useHoldings";
 import { Header } from "@/components/Header";
 import { DashboardNav } from "@/components/DashboardNav";
+import { HoldingFormDialog } from "@/components/HoldingFormDialog";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { TrendingUp, TrendingDown, Plus, Database } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { TrendingUp, TrendingDown, Plus, Database, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export default function Investments() {
   const { user, loading: authLoading, username, userRole } = useAuth();
-  const { stocks, bonds, funds, cds, totalValue, loading: holdingsLoading, seedDemoData } = useHoldings();
+  const { stocks, bonds, funds, cds, totalValue, loading: holdingsLoading, addHolding, updateHolding, deleteHolding, seedDemoData } = useHoldings();
   const [filter, setFilter] = useState("all");
   const [selectedPosition, setSelectedPosition] = useState<Holding | null>(null);
   const [liveUpdate, setLiveUpdate] = useState(0);
+  const [activeTab, setActiveTab] = useState("stocks");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingHolding, setEditingHolding] = useState<Holding | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [holdingToDelete, setHoldingToDelete] = useState<Holding | null>(null);
 
-  // Real-time price simulation every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setLiveUpdate((prev) => prev + 1);
@@ -36,18 +42,121 @@ export default function Investments() {
     );
   }
 
-  const getLiveChange = (basePrice: number) => {
-    return (Math.random() - 0.5) * 2;
-  };
+  const getLiveChange = () => (Math.random() - 0.5) * 2;
 
   const isEmpty = stocks.length === 0 && bonds.length === 0 && funds.length === 0 && cds.length === 0;
+
+  const getDefaultAssetType = (): AssetType => {
+    const map: Record<string, AssetType> = { stocks: "stock", bonds: "bond", funds: "fund", cds: "cd" };
+    return map[activeTab] || "stock";
+  };
+
+  const handleAddNew = () => {
+    setEditingHolding(null);
+    setFormOpen(true);
+  };
+
+  const handleEdit = (holding: Holding) => {
+    setEditingHolding(holding);
+    setSelectedPosition(null);
+    setFormOpen(true);
+  };
+
+  const handleDeleteClick = (holding: Holding) => {
+    setHoldingToDelete(holding);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (holdingToDelete) {
+      await deleteHolding(holdingToDelete.id);
+      setHoldingToDelete(null);
+      setSelectedPosition(null);
+    }
+    setDeleteConfirmOpen(false);
+  };
+
+  const handleFormSubmit = async (data: any) => {
+    if (editingHolding) {
+      return await updateHolding(editingHolding.id, data);
+    }
+    return await addHolding(data);
+  };
+
+  const renderTable = (items: Holding[], type: "stock" | "bond" | "fund" | "cd") => {
+    if (items.length === 0) {
+      return (
+        <Card className="p-8 text-center">
+          <p className="text-muted-foreground">No {type}s in your portfolio yet.</p>
+          <Button variant="outline" className="mt-4" onClick={handleAddNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add {type.charAt(0).toUpperCase() + type.slice(1)}
+          </Button>
+        </Card>
+      );
+    }
+
+    const isCD = type === "cd";
+    const isBond = type === "bond";
+
+    return (
+      <Card className="overflow-hidden bg-white border shadow-card">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted/30">
+              <tr className="border-b">
+                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Name</th>
+                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">{isCD ? "Institution" : "Ticker"}</th>
+                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">{isCD ? "Principal" : isBond ? "Units" : "Shares"}</th>
+                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">{isCD ? "Rate %" : "Price"}</th>
+                {!isCD && <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Change %</th>}
+                {isCD && <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Maturity</th>}
+                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => {
+                const change = isCD ? 0 : getLiveChange() * (isBond ? 0.1 : 1);
+                const livePrice = item.current_price * (1 + change / 100);
+                const quantity = item.shares || item.units || item.principal || 0;
+                const liveValue = isCD ? item.principal || 0 : quantity * livePrice;
+
+                return (
+                  <tr
+                    key={item.id}
+                    className="border-t hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedPosition(item)}
+                  >
+                    <td className="p-4">{item.name}</td>
+                    <td className="p-4 font-mono">{isCD ? item.institution : item.ticker}</td>
+                    <td className="p-4 text-right">{isCD ? `$${quantity.toLocaleString()}` : quantity.toLocaleString()}</td>
+                    <td className="p-4 text-right">{isCD ? `${item.rate?.toFixed(2)}%` : `$${livePrice.toFixed(2)}`}</td>
+                    {!isCD && (
+                      <td className="p-4 text-right">
+                        <span className={`flex items-center justify-end gap-1 ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                          {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+                        </span>
+                      </td>
+                    )}
+                    {isCD && <td className="p-4">{item.maturity_date}</td>}
+                    <td className="p-4 text-right font-semibold">${liveValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <DashboardNav username={username} userRole={userRole} />
       <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold text-foreground">Investment Portfolio</h1>
@@ -60,15 +169,19 @@ export default function Investments() {
               Total Holdings: ${(totalValue / 1000000).toFixed(2)}M
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {isEmpty && (
               <Button variant="outline" onClick={seedDemoData}>
                 <Database className="h-4 w-4 mr-2" />
                 Load Demo Data
               </Button>
             )}
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Holding
+            </Button>
             <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Filter by..." />
               </SelectTrigger>
               <SelectContent>
@@ -76,8 +189,6 @@ export default function Investments() {
                 <SelectItem value="high-risk">High Risk</SelectItem>
                 <SelectItem value="medium-risk">Medium Risk</SelectItem>
                 <SelectItem value="low-risk">Low Risk</SelectItem>
-                <SelectItem value="usd">USD</SelectItem>
-                <SelectItem value="gbp">GBP</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -91,12 +202,12 @@ export default function Investments() {
               </div>
               <h2 className="text-xl font-semibold">No Holdings Yet</h2>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Your portfolio is empty. Click "Load Demo Data" to see sample holdings, or add your first investment.
+                Your portfolio is empty. Click "Add Holding" to add your first investment, or load demo data to explore.
               </p>
             </div>
           </Card>
         ) : (
-          <Tabs defaultValue="stocks" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="stocks">Stocks ({stocks.length})</TabsTrigger>
               <TabsTrigger value="bonds">Bonds ({bonds.length})</TabsTrigger>
@@ -104,175 +215,10 @@ export default function Investments() {
               <TabsTrigger value="cds">CDs ({cds.length})</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="stocks" className="space-y-4">
-              <Card className="overflow-hidden bg-white border shadow-card">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/30">
-                      <tr className="border-b">
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Name</th>
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Ticker</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Shares</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Price</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Change %</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stocks.map((stock) => {
-                        const change = getLiveChange(stock.current_price);
-                        const livePrice = stock.current_price * (1 + change / 100);
-                        const liveValue = (stock.shares || 0) * livePrice;
-                        return (
-                          <tr
-                            key={stock.id}
-                            className="border-t hover:bg-muted/50 cursor-pointer transition-colors"
-                            onClick={() => setSelectedPosition(stock)}
-                          >
-                            <td className="p-4">{stock.name}</td>
-                            <td className="p-4 font-mono">{stock.ticker}</td>
-                            <td className="p-4 text-right">{stock.shares}</td>
-                            <td className="p-4 text-right transition-all duration-500">${livePrice.toFixed(2)}</td>
-                            <td className="p-4 text-right">
-                              <span className={`flex items-center justify-end gap-1 ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
-                                {change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                                {change >= 0 ? "+" : ""}{change.toFixed(2)}%
-                              </span>
-                            </td>
-                            <td className="p-4 text-right font-semibold">${liveValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="bonds" className="space-y-4">
-              <Card className="overflow-hidden bg-white border shadow-card">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/30">
-                      <tr className="border-b">
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Name</th>
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Ticker</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Units</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Price</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Change %</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bonds.map((bond) => {
-                        const change = getLiveChange(bond.current_price) * 0.1;
-                        const livePrice = bond.current_price * (1 + change / 100);
-                        const liveValue = (bond.units || 0) * livePrice;
-                        return (
-                          <tr
-                            key={bond.id}
-                            className="border-t hover:bg-muted/50 cursor-pointer transition-colors"
-                            onClick={() => setSelectedPosition(bond)}
-                          >
-                            <td className="p-4">{bond.name}</td>
-                            <td className="p-4 font-mono">{bond.ticker}</td>
-                            <td className="p-4 text-right">{bond.units}</td>
-                            <td className="p-4 text-right">${livePrice.toFixed(2)}</td>
-                            <td className="p-4 text-right">
-                              <span className={`flex items-center justify-end gap-1 ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
-                                {change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                                {change >= 0 ? "+" : ""}{change.toFixed(2)}%
-                              </span>
-                            </td>
-                            <td className="p-4 text-right font-semibold">${liveValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="funds" className="space-y-4">
-              <Card className="overflow-hidden bg-white border shadow-card">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/30">
-                      <tr className="border-b">
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Name</th>
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Ticker</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Shares</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Price</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Change %</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {funds.map((fund) => {
-                        const change = getLiveChange(fund.current_price);
-                        const livePrice = fund.current_price * (1 + change / 100);
-                        const liveValue = (fund.shares || 0) * livePrice;
-                        return (
-                          <tr
-                            key={fund.id}
-                            className="border-t hover:bg-muted/50 cursor-pointer transition-colors"
-                            onClick={() => setSelectedPosition(fund)}
-                          >
-                            <td className="p-4">{fund.name}</td>
-                            <td className="p-4 font-mono">{fund.ticker}</td>
-                            <td className="p-4 text-right">{fund.shares}</td>
-                            <td className="p-4 text-right">${livePrice.toFixed(2)}</td>
-                            <td className="p-4 text-right">
-                              <span className={`flex items-center justify-end gap-1 ${change >= 0 ? "text-green-600" : "text-red-600"}`}>
-                                {change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                                {change >= 0 ? "+" : ""}{change.toFixed(2)}%
-                              </span>
-                            </td>
-                            <td className="p-4 text-right font-semibold">${liveValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="cds" className="space-y-4">
-              <Card className="overflow-hidden bg-white border shadow-card">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/30">
-                      <tr className="border-b">
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Name</th>
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Institution</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Principal</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Rate %</th>
-                        <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Maturity</th>
-                        <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cds.map((cd) => (
-                        <tr
-                          key={cd.id}
-                          className="border-t hover:bg-muted/50 cursor-pointer transition-colors"
-                          onClick={() => setSelectedPosition(cd)}
-                        >
-                          <td className="p-4">{cd.name}</td>
-                          <td className="p-4">{cd.institution}</td>
-                          <td className="p-4 text-right">${cd.principal?.toLocaleString()}</td>
-                          <td className="p-4 text-right">{cd.rate?.toFixed(2)}%</td>
-                          <td className="p-4">{cd.maturity_date}</td>
-                          <td className="p-4 text-right font-semibold">${cd.principal?.toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </TabsContent>
+            <TabsContent value="stocks" className="space-y-4">{renderTable(stocks, "stock")}</TabsContent>
+            <TabsContent value="bonds" className="space-y-4">{renderTable(bonds, "bond")}</TabsContent>
+            <TabsContent value="funds" className="space-y-4">{renderTable(funds, "fund")}</TabsContent>
+            <TabsContent value="cds" className="space-y-4">{renderTable(cds, "cd")}</TabsContent>
           </Tabs>
         )}
 
@@ -293,6 +239,12 @@ export default function Investments() {
                     <p className="text-lg font-mono">{selectedPosition.ticker}</p>
                   </div>
                 )}
+                {selectedPosition.institution && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Institution</p>
+                    <p className="text-lg">{selectedPosition.institution}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm text-muted-foreground">Asset Type</p>
                   <Badge variant="outline" className="capitalize">{selectedPosition.asset_type}</Badge>
@@ -311,8 +263,43 @@ export default function Investments() {
                 </div>
               </div>
             )}
+            <SheetFooter className="mt-8 gap-2">
+              <Button variant="outline" onClick={() => handleEdit(selectedPosition!)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+              <Button variant="destructive" onClick={() => handleDeleteClick(selectedPosition!)}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </SheetFooter>
           </SheetContent>
         </Sheet>
+
+        <HoldingFormDialog
+          open={formOpen}
+          onOpenChange={setFormOpen}
+          onSubmit={handleFormSubmit}
+          holding={editingHolding}
+          defaultAssetType={getDefaultAssetType()}
+        />
+
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Holding</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{holdingToDelete?.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
