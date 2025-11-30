@@ -4,22 +4,24 @@ import { useHoldings, Holding, AssetType } from "@/hooks/useHoldings";
 import { Header } from "@/components/Header";
 import { DashboardNav } from "@/components/DashboardNav";
 import { HoldingFormDialog } from "@/components/HoldingFormDialog";
+import { PortfolioCharts } from "@/components/PortfolioCharts";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { TrendingUp, TrendingDown, Plus, Database, Pencil, Trash2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Plus, Database, Pencil, Trash2, BarChart3, List } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export default function Investments() {
   const { user, loading: authLoading, username, userRole } = useAuth();
-  const { stocks, bonds, funds, cds, totalValue, loading: holdingsLoading, addHolding, updateHolding, deleteHolding, seedDemoData } = useHoldings();
+  const { holdings, stocks, bonds, funds, cds, totalValue, loading: holdingsLoading, addHolding, updateHolding, deleteHolding, seedDemoData } = useHoldings();
   const [filter, setFilter] = useState("all");
   const [selectedPosition, setSelectedPosition] = useState<Holding | null>(null);
   const [liveUpdate, setLiveUpdate] = useState(0);
   const [activeTab, setActiveTab] = useState("stocks");
+  const [viewMode, setViewMode] = useState<"holdings" | "analytics">("holdings");
   const [formOpen, setFormOpen] = useState(false);
   const [editingHolding, setEditingHolding] = useState<Holding | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -191,6 +193,26 @@ export default function Investments() {
                 <SelectItem value="low-risk">Low Risk</SelectItem>
               </SelectContent>
             </Select>
+            <div className="flex border rounded-lg overflow-hidden">
+              <Button
+                variant={viewMode === "holdings" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("holdings")}
+                className="rounded-none"
+              >
+                <List className="h-4 w-4 mr-2" />
+                Holdings
+              </Button>
+              <Button
+                variant={viewMode === "analytics" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("analytics")}
+                className="rounded-none"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -206,6 +228,8 @@ export default function Investments() {
               </p>
             </div>
           </Card>
+        ) : viewMode === "analytics" ? (
+          <PortfolioCharts holdings={holdings} totalValue={totalValue} />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
