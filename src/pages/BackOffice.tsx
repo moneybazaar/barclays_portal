@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, DollarSign, TicketIcon, TrendingUp } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const mockStats = {
   totalClients: 847,
@@ -16,9 +17,17 @@ const mockClients = [
 ];
 
 export default function BackOffice() {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+  const { userRole, loading } = useAuth();
 
-  if (currentUser.role !== "admin") {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (userRole !== "admin") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card className="max-w-md">
