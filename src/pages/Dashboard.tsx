@@ -174,6 +174,22 @@ const Dashboard = () => {
             </div>
           )}
 
+          {userRole !== "admin" && (
+            <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-0 shadow-md">
+              <CardContent className="py-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-foreground">Welcome back, {username}!</h2>
+                    <p className="text-muted-foreground mt-1">Your portfolio is performing well. Here's your personalized overview.</p>
+                  </div>
+                  <Link to="/investments">
+                    <Button>View Investments</Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="bg-white border-0 shadow-md hover:shadow-lg transition-all">
               <CardHeader className="pb-3">

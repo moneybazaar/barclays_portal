@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, DollarSign, TicketIcon, TrendingUp } from "lucide-react";
+import { Users, DollarSign, TicketIcon, TrendingUp, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { RoleManagement } from "@/components/RoleManagement";
 
 const mockStats = {
   totalClients: 847,
@@ -51,6 +52,10 @@ export default function BackOffice() {
             <TabsTrigger value="investments">Investments</TabsTrigger>
             <TabsTrigger value="support">Support Analytics</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="roles" className="flex items-center gap-1">
+              <Shield className="h-4 w-4" />
+              Roles
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -178,6 +183,18 @@ export default function BackOffice() {
                     </tbody>
                   </table>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="roles" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Role Management</CardTitle>
+                <p className="text-sm text-muted-foreground">Assign and revoke user roles</p>
+              </CardHeader>
+              <CardContent>
+                <RoleManagement />
               </CardContent>
             </Card>
           </TabsContent>
