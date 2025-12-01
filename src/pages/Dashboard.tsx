@@ -115,14 +115,22 @@ const Dashboard = () => {
           <div className="space-y-2 mb-8">
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold text-foreground">
-                Portfolio Overview
+                {userRole === "admin" ? "Admin Portal" : "Portfolio Overview"}
               </h1>
               <Badge variant="outline" className="gap-2 animate-pulse">
                 <span className="h-2 w-2 rounded-full bg-green-500"></span>
                 Live
               </Badge>
+              {userRole === "admin" && (
+                <Badge variant="destructive">Admin</Badge>
+              )}
             </div>
-            <p className="text-muted-foreground">Welcome back, {username}</p>
+            <p className="text-muted-foreground">
+              {userRole === "admin" 
+                ? `Welcome, ${username}. You have full administrative access.`
+                : `Welcome back, ${username}`
+              }
+            </p>
           </div>
 
           {userRole === "admin" && (
