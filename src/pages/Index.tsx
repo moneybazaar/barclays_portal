@@ -35,7 +35,7 @@ export default function Index() {
                 className="bg-accent hover:bg-accent/90 text-accent-foreground text-xs sm:text-sm"
                 asChild
               >
-                <Link to="/login">Client Login</Link>
+                <a href="https://application.barclays-ib.online/olb/auth/login?redirect_to=/dashboard">Client Login</a>
               </Button>
               <button className="flex items-center gap-1.5 text-foreground hover:text-primary transition-colors px-2">
                 <Search className="h-4 w-4 sm:h-5 sm:w-5" />
