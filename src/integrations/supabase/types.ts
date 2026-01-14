@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          token: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          token: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          token?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_users: {
+        Row: {
+          auth_source: string | null
+          created_at: string | null
+          email: string
+          external_user_id: string | null
+          id: string
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auth_source?: string | null
+          created_at?: string | null
+          email: string
+          external_user_id?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auth_source?: string | null
+          created_at?: string | null
+          email?: string
+          external_user_id?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       holdings: {
         Row: {
           asset_type: Database["public"]["Enums"]["asset_type"]
@@ -71,6 +133,60 @@ export type Database = {
           units?: number | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      pending_access_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          user_email: string
+          verified_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          user_email: string
+          verified_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          user_email?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      pending_invitations: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          status: string | null
+          used_at: string | null
+          user_email: string
+          user_name: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          status?: string | null
+          used_at?: string | null
+          user_email: string
+          user_name?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          status?: string | null
+          used_at?: string | null
+          user_email?: string
+          user_name?: string | null
         }
         Relationships: []
       }
