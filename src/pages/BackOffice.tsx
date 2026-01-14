@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, DollarSign, TicketIcon, TrendingUp, Shield } from "lucide-react";
+import { Users, DollarSign, TicketIcon, TrendingUp, Shield, UserRoundCog } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleManagement } from "@/components/RoleManagement";
+import { ClientManagement } from "@/components/ClientManagement";
 
 const mockStats = {
   totalClients: 847,
@@ -10,12 +11,6 @@ const mockStats = {
   activeTickets: 23,
   avgResolutionTime: "4.2 hours",
 };
-
-const mockClients = [
-  { name: "John Smith", email: "john@example.com", aum: 2500000, status: "Active" },
-  { name: "Sarah Johnson", email: "sarah@example.com", aum: 1800000, status: "Active" },
-  { name: "Michael Brown", email: "michael@example.com", aum: 3200000, status: "Pending" },
-];
 
 export default function BackOffice() {
   const { userRole, loading } = useAuth();
@@ -51,7 +46,10 @@ export default function BackOffice() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="investments">Investments</TabsTrigger>
             <TabsTrigger value="support">Support Analytics</TabsTrigger>
-            <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="clients" className="flex items-center gap-1">
+              <UserRoundCog className="h-4 w-4" />
+              Clients
+            </TabsTrigger>
             <TabsTrigger value="roles" className="flex items-center gap-1">
               <Shield className="h-4 w-4" />
               Roles
@@ -145,44 +143,14 @@ export default function BackOffice() {
             </div>
           </TabsContent>
 
-          <TabsContent value="users" className="space-y-6">
+          <TabsContent value="clients" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Client Management</CardTitle>
+                <p className="text-sm text-muted-foreground">View all registered clients and manage their holdings</p>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="text-left p-3 font-semibold">Name</th>
-                        <th className="text-left p-3 font-semibold">Email</th>
-                        <th className="text-right p-3 font-semibold">AUM</th>
-                        <th className="text-left p-3 font-semibold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {mockClients.map((client, idx) => (
-                        <tr key={idx} className="border-t">
-                          <td className="p-3">{client.name}</td>
-                          <td className="p-3">{client.email}</td>
-                          <td className="p-3 text-right">${(client.aum / 1000000).toFixed(1)}M</td>
-                          <td className="p-3">
-                            <span
-                              className={`px-2 py-1 rounded text-xs ${
-                                client.status === "Active"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-yellow-100 text-yellow-700"
-                              }`}
-                            >
-                              {client.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ClientManagement />
               </CardContent>
             </Card>
           </TabsContent>
