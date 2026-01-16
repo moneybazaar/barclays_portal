@@ -1,8 +1,17 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, ChevronDown, ExternalLink, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Index() {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Main Header */}
@@ -37,17 +46,71 @@ export default function Index() {
               >
                 Contact Us
               </Button>
-              <Button 
-                size="sm"
-                className="bg-accent hover:bg-accent/90 text-accent-foreground text-xs sm:text-sm"
-                asChild
-              >
-                <a href="https://application.barclays-ib.online/olb/auth/login?redirect_to=/dashboard">Client Login</a>
-              </Button>
-              <button className="flex items-center gap-1.5 text-foreground hover:text-primary transition-colors px-2">
-                <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-sm hidden sm:inline">Search</span>
-              </button>
+              
+              {/* Client Login Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    size="sm"
+                    className="bg-accent hover:bg-accent/90 text-accent-foreground text-xs sm:text-sm"
+                  >
+                    Client Login
+                    <ChevronDown className="ml-1.5 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <a 
+                      href="https://application.barclays-ib.online/olb/auth/login?redirect_to=/dashboard"
+                      className="flex items-center justify-between w-full cursor-pointer"
+                    >
+                      Barclays Live
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a 
+                      href="https://barx.barclays.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between w-full cursor-pointer"
+                    >
+                      BARX
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Expandable Search */}
+              {isSearchOpen ? (
+                <div className="flex items-center gap-2 animate-in slide-in-from-right-4 duration-200">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="How can we help?"
+                      className="pl-10 pr-4 py-2 w-48 sm:w-64 border border-input rounded-md text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary transition-colors"
+                      autoFocus
+                    />
+                  </div>
+                  <button 
+                    onClick={() => setIsSearchOpen(false)}
+                    className="flex items-center gap-1 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="hidden sm:inline">Cancel</span>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsSearchOpen(true)}
+                  className="flex items-center gap-1.5 text-foreground hover:text-primary transition-colors px-2"
+                >
+                  <Search className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-sm hidden sm:inline">Search</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
