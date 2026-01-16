@@ -27,7 +27,7 @@ const mockDocuments = {
 };
 
 export default function Documents() {
-  const { user, loading, username, userRole } = useAuth();
+  const { user, loading, username, userRole, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("aml");
 
   if (loading) {
@@ -61,7 +61,7 @@ export default function Documents() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header username={username} userEmail={user?.email} onSignOut={signOut} />
       <DashboardNav username={username} userRole={userRole} />
       <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-6">
