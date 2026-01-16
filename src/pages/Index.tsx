@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronDown, ExternalLink, X } from "lucide-react";
+import { Search, ChevronDown, ExternalLink, X, Linkedin, Twitter, Youtube, Facebook } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-investment-banking.jpg";
 import {
@@ -172,6 +172,103 @@ export default function Index() {
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-barclays-navy text-white">
+        {/* Main Footer Content */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+            {/* About Column */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">About</h3>
+              <ul className="space-y-3">
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">About Barclays</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Our Leadership</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Investor Relations</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Newsroom</a></li>
+              </ul>
+            </div>
+
+            {/* Solutions Column */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Solutions</h3>
+              <ul className="space-y-3">
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Investment Banking</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Markets</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Research</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Transaction Banking</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Risk Management</a></li>
+              </ul>
+            </div>
+
+            {/* Resources Column */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Resources</h3>
+              <ul className="space-y-3">
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Insights & Research</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Economic Reports</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Events</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Client Portal</a></li>
+                <li><a href="#" className="text-sm text-white/80 hover:text-white transition-colors">Contact Us</a></li>
+              </ul>
+            </div>
+
+            {/* Connect Column */}
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider mb-4">Connect With Us</h3>
+              <div className="flex items-center gap-4 mb-6">
+                <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors" aria-label="LinkedIn">
+                  <Linkedin className="h-5 w-5" />
+                </a>
+                <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors" aria-label="Twitter">
+                  <Twitter className="h-5 w-5" />
+                </a>
+                <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors" aria-label="YouTube">
+                  <Youtube className="h-5 w-5" />
+                </a>
+                <a href="#" className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors" aria-label="Facebook">
+                  <Facebook className="h-5 w-5" />
+                </a>
+              </div>
+              <p className="text-sm text-white/80">
+                Stay updated with the latest market insights and news.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Bottom */}
+        <div className="border-t border-white/20">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+              {/* Logo */}
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/barclays-eagle.svg" 
+                  alt="Barclays" 
+                  className="h-8 w-auto brightness-0 invert" 
+                />
+                <span className="text-sm font-semibold">Investment Bank</span>
+              </div>
+
+              {/* Legal Links */}
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-white/70">
+                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
+                <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
+                <a href="#" className="hover:text-white transition-colors">Accessibility</a>
+                <a href="#" className="hover:text-white transition-colors">Modern Slavery Statement</a>
+              </div>
+
+              {/* Copyright */}
+              <p className="text-xs text-white/60">
+                © {new Date().getFullYear()} Barclays. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
