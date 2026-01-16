@@ -150,22 +150,20 @@ const LandingHeader = () => {
                       exit={{ opacity: 0, y: 10 }}
                       className="absolute right-0 mt-2 w-48 bg-popover rounded-lg shadow-elevated border border-border overflow-hidden"
                     >
-                      <a
-                        href="https://live.barcap.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        to="/dashboard"
                         className="block px-4 py-3 text-sm text-popover-foreground hover:bg-muted transition-colors"
+                        onClick={() => setIsClientLoginOpen(false)}
                       >
-                        Barclays Live
-                      </a>
-                      <a
-                        href="https://www.barxis.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        Client Portal
+                      </Link>
+                      <Link
+                        to="/research"
                         className="block px-4 py-3 text-sm text-popover-foreground hover:bg-muted transition-colors"
+                        onClick={() => setIsClientLoginOpen(false)}
                       >
-                        BARX
-                      </a>
+                        Research Portal
+                      </Link>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -378,14 +376,13 @@ const LandingHeader = () => {
                 >
                   Contact Us
                 </a>
-                <a
-                  href="https://live.barcap.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to="/dashboard"
                   className="block w-full text-center py-3 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   Client Login
-                </a>
+                </Link>
               </div>
             </div>
           </motion.div>
