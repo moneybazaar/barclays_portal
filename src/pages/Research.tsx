@@ -86,7 +86,7 @@ const sectorColors: Record<string, string> = {
 };
 
 export default function Research() {
-  const { user, loading, username, userRole } = useAuth();
+  const { user, loading, username, userRole, signOut } = useAuth();
   const [viewMode, setViewMode] = useState<"chart" | "table" | "publications">("chart");
   const [region, setRegion] = useState<"regional" | "sector">("regional");
   const [timePeriod, setTimePeriod] = useState<"3m" | "6m" | "ytd" | "1y">("ytd");
@@ -134,7 +134,7 @@ export default function Research() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header username={username} userEmail={user?.email} onSignOut={signOut} />
       <DashboardNav username={username} userRole={userRole} />
 
       <main className="container mx-auto px-4 py-8">

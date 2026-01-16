@@ -17,7 +17,7 @@ const mockAccountDetails = {
 };
 
 export default function Deposit() {
-  const { user, loading, username, userRole } = useAuth();
+  const { user, loading, username, userRole, signOut } = useAuth();
   const [showQR, setShowQR] = useState(false);
   const [hasPendingDeposit] = useState(true);
 
@@ -47,7 +47,7 @@ export default function Deposit() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header username={username} userEmail={user?.email} onSignOut={signOut} />
       <DashboardNav username={username} userRole={userRole} />
       <div className="p-6">
       <div className="max-w-5xl mx-auto space-y-6">

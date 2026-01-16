@@ -26,7 +26,7 @@ const generateFxValues = () => {
 };
 
 export default function FxHeatmap() {
-  const { user, loading, username, userRole } = useAuth();
+  const { user, loading, username, userRole, signOut } = useAuth();
   const [fxValues, setFxValues] = useState(generateFxValues());
   const [timePeriod, setTimePeriod] = useState("21");
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -66,7 +66,7 @@ export default function FxHeatmap() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header username={username} userEmail={user?.email} onSignOut={signOut} />
       <DashboardNav username={username} userRole={userRole} />
 
       <main className="container mx-auto px-4 py-8">

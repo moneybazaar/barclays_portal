@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export default function Investments() {
-  const { user, loading: authLoading, username, userRole } = useAuth();
+  const { user, loading: authLoading, username, userRole, signOut } = useAuth();
   const { holdings, stocks, bonds, funds, cds, totalValue, loading: holdingsLoading, addHolding, updateHolding, deleteHolding, seedDemoData } = useHoldings();
   const [filter, setFilter] = useState("all");
   const [selectedPosition, setSelectedPosition] = useState<Holding | null>(null);
@@ -155,7 +155,7 @@ export default function Investments() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header username={username} userEmail={user?.email} onSignOut={signOut} />
       <DashboardNav username={username} userRole={userRole} />
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">

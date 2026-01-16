@@ -38,7 +38,7 @@ const assetAllocation = [
 const COLORS = ["#00A9E0", "#005EB8", "#FFB81C", "#002B5C"];
 
 const Dashboard = () => {
-  const { user, loading, username, userRole } = useAuth();
+  const { user, loading, username, userRole, signOut } = useAuth();
   const [timeRange, setTimeRange] = useState<"3m" | "6m" | "ytd">("ytd");
   const [liveUpdate, setLiveUpdate] = useState(0);
   const [portfolioValue, setPortfolioValue] = useState(12.45);
@@ -107,7 +107,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header username={username} userEmail={user?.email} onSignOut={signOut} />
       <DashboardNav username={username} userRole={userRole} />
 
       <main className="container mx-auto px-6 py-8">
