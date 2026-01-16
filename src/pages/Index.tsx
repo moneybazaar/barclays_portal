@@ -10,11 +10,18 @@ export default function Index() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between">
             {/* Logo Section */}
-            <Link to="/" className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3">
+              {/* Mobile: Eagle only */}
+              <img 
+                src="/barclays-eagle.svg" 
+                alt="Barclays" 
+                className="h-8 w-auto sm:hidden" 
+              />
+              {/* Tablet/Desktop: Full logo */}
               <img 
                 src="/barclays-logo.svg" 
                 alt="Barclays" 
-                className="h-6 sm:h-8 object-contain" 
+                className="hidden sm:block h-10 md:h-12 w-auto object-contain" 
               />
               <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
               <span className="text-primary font-semibold text-sm sm:text-base hidden sm:block">
