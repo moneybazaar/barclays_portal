@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Barclays Expert Sans Font Family */
+@font-face {
+  font-family: 'Expert Sans';
+  src: url('/fonts/expert-sans-light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Expert Sans';
+  src: url('/fonts/expert-sans-regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Expert Sans';
+  src: url('/fonts/expert-sans-bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

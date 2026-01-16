@@ -53,6 +53,9 @@ export default {
           lightBg: "hsl(var(--barclays-light-bg))",
         },
       },
+      fontFamily: {
+        sans: ['"Expert Sans"', 'system-ui', 'sans-serif'],
+      },
       boxShadow: {
         subtle: "var(--shadow-subtle)",
         card: "var(--shadow-card)",
