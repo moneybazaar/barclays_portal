@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Search, ChevronDown, ExternalLink, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import heroImage from "@/assets/hero-investment-banking.jpg";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,14 +134,42 @@ export default function Index() {
         </div>
       </nav>
 
-      {/* Main Content Area */}
-      <main className="flex-1 relative">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[60vh] flex flex-col justify-end pb-12">
-          <Button 
-            className="bg-accent hover:bg-accent/90 text-accent-foreground px-6 py-2.5 rounded-full w-fit"
-          >
-            Read the report
-          </Button>
+      {/* Hero Section */}
+      <main className="flex-1">
+        <section className="flex flex-col lg:flex-row min-h-[500px] lg:min-h-[600px]">
+          {/* Left Content Panel - Dark Navy */}
+          <div className="w-full lg:w-1/2 bg-barclays-navy text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
+            <span className="text-xs sm:text-sm font-semibold tracking-widest uppercase mb-4 text-white/80">
+              Solutions
+            </span>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+              Investment Banking
+            </h1>
+            <p className="text-base sm:text-lg text-white/90 leading-relaxed max-w-xl">
+              Successfully navigating the rapid, disruptive shifts reshaping 
+              industries and business models takes a partner who deeply 
+              understands your goals. Together, let's create the tailored, 
+              sophisticated financial strategies you need to power possible.
+            </p>
+          </div>
+          
+          {/* Right Image Panel */}
+          <div className="w-full lg:w-1/2 min-h-[300px] lg:min-h-auto relative">
+            <img 
+              src={heroImage}
+              alt="Modern glass building architecture"
+              className="w-full h-full object-cover absolute inset-0"
+            />
+          </div>
+        </section>
+        
+        {/* CTA Section */}
+        <div className="bg-background py-8">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground px-6 py-2.5 rounded-full">
+              Read the report
+            </Button>
+          </div>
         </div>
       </main>
     </div>
