@@ -1,8 +1,74 @@
-import { TrendingUp, TrendingDown, ArrowRight, Clock, BarChart3, Globe, FileText } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowRight, Clock, BarChart3, Globe, FileText, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import heroImage from "@/assets/hero-investment-banking.jpg";
 import LandingHeader from "@/components/landing/LandingHeader";
 import LandingFooter from "@/components/landing/LandingFooter";
+import { useMarketData, formatPrice } from "@/hooks/useMarketData";
+
+function MarketHighlightsSection() {
+  const { data: marketData, isLoading, isError, dataUpdatedAt } = useMarketData();
+  
+  const lastUpdatedTime = dataUpdatedAt 
+    ? new Date(dataUpdatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  return (
+    <section className="bg-background py-16">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Market Highlights</h2>
+          {lastUpdatedTime && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Updated {lastUpdatedTime}</span>
+            </div>
+          )}
+        </div>
+        
+        {isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-muted rounded-lg p-5">
+                <Skeleton className="h-3 w-16 mb-3" />
+                <Skeleton className="h-7 w-24" />
+              </div>
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="bg-muted rounded-lg p-8 text-center">
+            <p className="text-muted-foreground">Unable to load market data. Please try again later.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
+            {marketData?.map((item) => (
+              <div key={item.symbol} className="bg-muted rounded-lg p-5">
+                <span className="text-xs font-medium text-muted-foreground">{item.name}</span>
+                <div className="flex items-end gap-2 mt-1">
+                  <span className="text-xl sm:text-2xl font-bold text-foreground">
+                    {formatPrice(item.price, item.symbol)}
+                  </span>
+                  {item.price > 0 && (
+                    <div className={`flex items-center gap-1 mb-1 ${item.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                      {item.isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                      <span className="text-sm font-medium">
+                        {item.isPositive ? '+' : ''}{item.changePercent.toFixed(2)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground mt-4">
+          Market data refreshes every 60 seconds. Data provided by Finnhub.
+        </p>
+      </div>
+    </section>
+  );
+}
 
 export default function Index() {
   return (
@@ -123,65 +189,7 @@ export default function Index() {
         </section>
 
         {/* Market Highlights Section */}
-        <section className="bg-background py-16">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-8">Market Highlights</h2>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
-              {/* Market Card 1 */}
-              <div className="bg-muted rounded-lg p-5">
-                <span className="text-xs font-medium text-muted-foreground">S&P 500</span>
-                <div className="flex items-end gap-2 mt-1">
-                  <span className="text-xl sm:text-2xl font-bold text-foreground">4,892.34</span>
-                  <div className="flex items-center gap-1 text-green-600 mb-1">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="text-sm font-medium">+1.24%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Market Card 2 */}
-              <div className="bg-muted rounded-lg p-5">
-                <span className="text-xs font-medium text-muted-foreground">FTSE 100</span>
-                <div className="flex items-end gap-2 mt-1">
-                  <span className="text-xl sm:text-2xl font-bold text-foreground">7,654.21</span>
-                  <div className="flex items-center gap-1 text-green-600 mb-1">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="text-sm font-medium">+0.87%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Market Card 3 */}
-              <div className="bg-muted rounded-lg p-5">
-                <span className="text-xs font-medium text-muted-foreground">EUR/USD</span>
-                <div className="flex items-end gap-2 mt-1">
-                  <span className="text-xl sm:text-2xl font-bold text-foreground">1.0842</span>
-                  <div className="flex items-center gap-1 text-red-600 mb-1">
-                    <TrendingDown className="h-4 w-4" />
-                    <span className="text-sm font-medium">-0.32%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Market Card 4 */}
-              <div className="bg-muted rounded-lg p-5">
-                <span className="text-xs font-medium text-muted-foreground">Gold</span>
-                <div className="flex items-end gap-2 mt-1">
-                  <span className="text-xl sm:text-2xl font-bold text-foreground">2,048.50</span>
-                  <div className="flex items-center gap-1 text-green-600 mb-1">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="text-sm font-medium">+0.56%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground mt-4">
-              Market data is delayed by at least 15 minutes. For real-time data, please log in to your client portal.
-            </p>
-          </div>
-        </section>
+        <MarketHighlightsSection />
 
         {/* Recent News Section */}
         <section className="bg-barclays-lightBg py-16">
