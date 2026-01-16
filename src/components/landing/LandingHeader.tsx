@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronDown, X, Menu } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ThemeToggle } from './ThemeToggle';
+import { ThemeToggle, useTheme } from './ThemeToggle';
 
 interface SubMenuItem {
   title: string;
@@ -77,6 +77,7 @@ const LandingHeader = () => {
   const [isClientLoginOpen, setIsClientLoginOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState<string | null>(null);
+  const { isDark } = useTheme();
   const solutionsRef = useRef<HTMLDivElement>(null);
   const clientLoginRef = useRef<HTMLDivElement>(null);
 
@@ -108,9 +109,9 @@ const LandingHeader = () => {
                 className="h-8 w-auto sm:hidden" 
               />
               <img 
-                src="/barclays-logo.svg" 
+                src={isDark ? "/barclays-logo-dark.svg" : "/barclays-logo.svg"}
                 alt="Barclays" 
-                className="hidden sm:block h-10 md:h-12 w-auto object-contain" 
+                className="hidden sm:block h-10 md:h-12 w-auto object-contain"
               />
               <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
               <span className="text-primary font-semibold text-sm sm:text-base hidden sm:block">
