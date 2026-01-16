@@ -42,6 +42,22 @@ const socialLinks = [
 const LandingFooter = () => {
   return (
     <footer className="bg-barclays-navy text-white">
+      {/* FDIC Disclosure Bar */}
+      <div className="bg-background border-b border-border">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center gap-4">
+            <img 
+              src="/fdic-logo.svg" 
+              alt="FDIC" 
+              className="h-5 w-auto"
+            />
+            <p className="text-sm text-foreground italic">
+              FDIC-Insured - Backed by the full faith and credit of the U.S. Government
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Social Media Bar */}
       <div className="border-b border-white/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
