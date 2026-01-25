@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const SESSION_STORAGE_KEY = "barclays_session_token";
-const AUTH_PORTAL_URL = "https://application.barclays-ib.online";
+const AUTH_PORTAL_URL = "https://application.barclays-ib.app";
 
 interface AppUser {
   id: string;
