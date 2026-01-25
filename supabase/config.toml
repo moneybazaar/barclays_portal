@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.external-invite]
 verify_jwt = false
+
+[functions.interest-form]
+verify_jwt = false

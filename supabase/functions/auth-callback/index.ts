@@ -1,12 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const allowedOrigins = [
+  "https://secure.barclays-ib.app",
+  "https://application.barclays-ib.app",
+  "https://registration.barclays-ib.com",
+  "https://barclayportal.lovable.app",
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigin = origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
 };
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -111,6 +125,8 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Session created for user: ${userData.email}`);
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -127,7 +143,7 @@ serve(async (req) => {
     console.error("Auth callback error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(null), "Content-Type": "application/json" } }
     );
   }
 });

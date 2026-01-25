@@ -150,11 +150,10 @@ const LandingFooter = () => {
             {/* Logo */}
             <div className="flex items-center gap-3">
               <img 
-                src="/barclays-eagle.svg" 
+                src="/barclays-logo.svg" 
                 alt="Barclays" 
-                className="h-8 w-auto brightness-0 invert" 
+                className="h-6 w-auto brightness-0 invert" 
               />
-              <span className="text-sm font-semibold">Investment Bank</span>
             </div>
 
             {/* Legal Links */}

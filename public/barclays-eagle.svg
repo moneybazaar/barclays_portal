@@ -1,11 +1,11 @@
 <svg viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Barclays Eagle Icon -->
-  <path d="M50 5 C35 5 25 15 20 25 C15 35 15 45 20 55 C25 65 35 72 50 75 C65 72 75 65 80 55 C85 45 85 35 80 25 C75 15 65 5 50 5 Z" fill="#00AEEF"/>
-  <path d="M50 12 C60 12 68 18 72 28 L50 35 L28 28 C32 18 40 12 50 12 Z" fill="#ffffff"/>
-  <path d="M25 35 C25 45 30 55 40 62 L50 45 L35 35 Z" fill="#ffffff"/>
-  <path d="M75 35 C75 45 70 55 60 62 L50 45 L65 35 Z" fill="#ffffff"/>
-  <path d="M50 50 L42 65 C45 68 48 70 50 70 C52 70 55 68 58 65 L50 50 Z" fill="#ffffff"/>
-  <circle cx="50" cy="30" r="8" fill="#00AEEF"/>
-  <ellipse cx="42" cy="25" rx="3" ry="4" fill="#00AEEF"/>
-  <ellipse cx="58" cy="25" rx="3" ry="4" fill="#00AEEF"/>
+  <!-- Barclays Eagle Icon - using currentColor for flexible styling -->
+  <path d="M50 5 C35 5 25 15 20 25 C15 35 15 45 20 55 C25 65 35 72 50 75 C65 72 75 65 80 55 C85 45 85 35 80 25 C75 15 65 5 50 5 Z" fill="currentColor"/>
+  <path d="M50 12 C60 12 68 18 72 28 L50 35 L28 28 C32 18 40 12 50 12 Z" fill="currentColor" fill-opacity="0.3"/>
+  <path d="M25 35 C25 45 30 55 40 62 L50 45 L35 35 Z" fill="currentColor" fill-opacity="0.3"/>
+  <path d="M75 35 C75 45 70 55 60 62 L50 45 L65 35 Z" fill="currentColor" fill-opacity="0.3"/>
+  <path d="M50 50 L42 65 C45 68 48 70 50 70 C52 70 55 68 58 65 L50 50 Z" fill="currentColor" fill-opacity="0.3"/>
+  <circle cx="50" cy="30" r="8" fill="currentColor" fill-opacity="0.3"/>
+  <ellipse cx="42" cy="25" rx="3" ry="4" fill="currentColor" fill-opacity="0.3"/>
+  <ellipse cx="58" cy="25" rx="3" ry="4" fill="currentColor" fill-opacity="0.3"/>
 </svg>
