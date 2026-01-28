@@ -136,6 +136,54 @@ export type Database = {
         }
         Relationships: []
       }
+      interest_submissions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          interest_type: string
+          investment_amount: number | null
+          message: string | null
+          metadata: Json | null
+          name: string | null
+          phone: string | null
+          processed_at: string | null
+          source_domain: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          interest_type?: string
+          investment_amount?: number | null
+          message?: string | null
+          metadata?: Json | null
+          name?: string | null
+          phone?: string | null
+          processed_at?: string | null
+          source_domain?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          interest_type?: string
+          investment_amount?: number | null
+          message?: string | null
+          metadata?: Json | null
+          name?: string | null
+          phone?: string | null
+          processed_at?: string | null
+          source_domain?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pending_access_codes: {
         Row: {
           code: string
