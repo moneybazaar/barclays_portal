@@ -74,20 +74,15 @@ const solutionsMenu: MenuColumn[] = [
 const LandingHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSolutionsOpen, setIsSolutionsOpen] = useState(false);
-  const [isClientLoginOpen, setIsClientLoginOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState<string | null>(null);
   const { isDark } = useTheme();
   const solutionsRef = useRef<HTMLDivElement>(null);
-  const clientLoginRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (solutionsRef.current && !solutionsRef.current.contains(event.target as Node)) {
         setIsSolutionsOpen(false);
-      }
-      if (clientLoginRef.current && !clientLoginRef.current.contains(event.target as Node)) {
-        setIsClientLoginOpen(false);
       }
     };
 
@@ -132,42 +127,13 @@ const LandingHeader = () => {
                 Contact Us
               </a>
 
-              {/* Client Login Dropdown */}
-              <div ref={clientLoginRef} className="relative">
-                <button
-                  onClick={() => setIsClientLoginOpen(!isClientLoginOpen)}
-                  className="flex items-center gap-1.5 px-5 py-2 bg-accent text-accent-foreground rounded-full font-medium text-sm hover:bg-accent/90 transition-colors"
-                >
-                  Client Login
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isClientLoginOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                <AnimatePresence>
-                  {isClientLoginOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 mt-2 w-48 bg-popover rounded-lg shadow-elevated border border-border overflow-hidden"
-                    >
-                      <Link
-                        to="/dashboard"
-                        className="block px-4 py-3 text-sm text-popover-foreground hover:bg-muted transition-colors"
-                        onClick={() => setIsClientLoginOpen(false)}
-                      >
-                        Client Portal
-                      </Link>
-                      <Link
-                        to="/research"
-                        className="block px-4 py-3 text-sm text-popover-foreground hover:bg-muted transition-colors"
-                        onClick={() => setIsClientLoginOpen(false)}
-                      >
-                        Research Portal
-                      </Link>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              {/* Client Login Button */}
+              <Link
+                to="/dashboard"
+                className="px-5 py-2 bg-accent text-accent-foreground rounded-full font-medium text-sm hover:bg-accent/90 transition-colors"
+              >
+                Client Login
+              </Link>
 
               <button
                 onClick={() => setIsSearchOpen(true)}
