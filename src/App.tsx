@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Investments from "./pages/Investments";
-import Research from "./pages/Research";
+
 import Documents from "./pages/Documents";
 import Deposit from "./pages/Deposit";
 import Settings from "./pages/Settings";
@@ -28,7 +28,7 @@ const App = () => (
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/investments" element={<Investments />} />
-          <Route path="/research" element={<Research />} />
+          
           <Route path="/fx-heatmap" element={<FxHeatmap />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/deposit" element={<Deposit />} />

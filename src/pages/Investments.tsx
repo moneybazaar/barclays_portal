@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 
 export default function Investments() {
   const { user, loading: authLoading, username, userRole, signOut } = useAuth();
-  const { holdings, stocks, bonds, funds, cds, totalValue, loading: holdingsLoading, addHolding, updateHolding, deleteHolding, seedDemoData } = useHoldings();
+  const { holdings, stocks, bonds, funds, cds, totalValue, loading: holdingsLoading, addHolding, updateHolding, deleteHolding } = useHoldings();
   const [filter, setFilter] = useState("all");
   const [selectedPosition, setSelectedPosition] = useState<Holding | null>(null);
   const [liveUpdate, setLiveUpdate] = useState(0);
@@ -172,12 +172,6 @@ export default function Investments() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {isEmpty && (
-              <Button variant="outline" onClick={seedDemoData}>
-                <Database className="h-4 w-4 mr-2" />
-                Load Demo Data
-              </Button>
-            )}
             <Button onClick={handleAddNew}>
               <Plus className="h-4 w-4 mr-2" />
               Add Holding

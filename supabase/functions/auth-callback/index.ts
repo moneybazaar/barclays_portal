@@ -95,6 +95,16 @@ serve(async (req) => {
       .select()
       .single();
 
+    if (!userError && userData) {
+      // Ensure user has a role in app_user_roles (default to client)
+      await supabase
+        .from("app_user_roles")
+        .upsert(
+          { user_id: userData.id, role: verifyData.user_data?.role || "client" },
+          { onConflict: "user_id,role" }
+        );
+    }
+
     if (userError) {
       console.error("Error upserting user:", userError);
       return new Response(

@@ -342,7 +342,7 @@ const Dashboard = () => {
                     <TabsTrigger value="ytd">YTD</TabsTrigger>
                   </TabsList>
                 </Tabs>
-                <Link to="/research">
+                <Link to="/investments">
                   <Button variant="link" className="gap-1 text-accent">
                     View Details →
                   </Button>
