@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Header } from "@/components/Header";
+import { DashboardNav } from "@/components/DashboardNav";
 
 const mockSessions = [
   { ip: "192.168.1.22", device: "Chrome / Windows 10", time: "10:42 AM", location: "London, UK" },
@@ -14,14 +16,24 @@ const mockSessions = [
 ];
 
 export default function Settings() {
-  const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const { user, loading, username, userRole, signOut } = useAuth();
   const [theme, setTheme] = useState<"light" | "dark" | "system">("light");
   const [formData, setFormData] = useState({
-    name: "John Smith",
-    email: "john.smith@example.com",
+    name: "",
+    email: "",
     phone: "+44 20 7123 4567",
     address: "123 Financial Street, London EC2A 1AB",
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || "",
+        email: user.email || "",
+      }));
+    }
+  }, [user]);
 
   const handleSave = () => {
     toast({
@@ -38,70 +50,66 @@ export default function Settings() {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-foreground">Account Settings</h1>
+    <div className="min-h-screen bg-background">
+      <Header username={username} userEmail={user?.email} onSignOut={signOut} />
+      <DashboardNav username={username} userRole={userRole} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                />
-              </div>
-              <Button onClick={handleSave} className="w-full">
-                Save Changes
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-5xl mx-auto space-y-6">
+          <h1 className="text-3xl font-bold text-foreground">Account Settings</h1>
 
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Security</CardTitle>
+                <CardTitle>Profile Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold">Two-Factor Authentication</p>
-                    <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
-                  </div>
-                  <Switch checked={twoFAEnabled} onCheckedChange={setTwoFAEnabled} />
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    disabled
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  />
+                </div>
+                <Button onClick={handleSave} className="w-full">
+                  Save Changes
+                </Button>
               </CardContent>
             </Card>
 
@@ -139,37 +147,37 @@ export default function Settings() {
               </CardContent>
             </Card>
           </div>
-        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Sessions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-left p-3 font-semibold">IP Address</th>
-                    <th className="text-left p-3 font-semibold">Device</th>
-                    <th className="text-left p-3 font-semibold">Location</th>
-                    <th className="text-left p-3 font-semibold">Last Active</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockSessions.map((session, idx) => (
-                    <tr key={idx} className="border-t">
-                      <td className="p-3 font-mono text-sm">{session.ip}</td>
-                      <td className="p-3">{session.device}</td>
-                      <td className="p-3">{session.location}</td>
-                      <td className="p-3">{session.time}</td>
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Sessions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left p-3 font-semibold">IP Address</th>
+                      <th className="text-left p-3 font-semibold">Device</th>
+                      <th className="text-left p-3 font-semibold">Location</th>
+                      <th className="text-left p-3 font-semibold">Last Active</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                  </thead>
+                  <tbody>
+                    {mockSessions.map((session, idx) => (
+                      <tr key={idx} className="border-t">
+                        <td className="p-3 font-mono text-sm">{session.ip}</td>
+                        <td className="p-3">{session.device}</td>
+                        <td className="p-3">{session.location}</td>
+                        <td className="p-3">{session.time}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
