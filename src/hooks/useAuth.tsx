@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const SESSION_STORAGE_KEY = "barclays_session_token";
-const AUTH_PORTAL_URL = "https://application.barclays-ib.app";
+const LOGIN_PATH = "/login";
 
 interface AppUser {
   id: string;
@@ -19,10 +19,8 @@ export const useAuth = () => {
   const [userRole, setUserRole] = useState<"admin" | "moderator" | "user" | "client">("client");
 
   const redirectToLogin = useCallback(() => {
-    const currentPath = location.pathname;
-    const loginUrl = `${AUTH_PORTAL_URL}/olb/auth/login?redirect_to=${encodeURIComponent(currentPath)}`;
-    window.location.href = loginUrl;
-  }, [location.pathname]);
+    navigate(LOGIN_PATH, { replace: true });
+  }, [navigate]);
 
   const validateSession = useCallback(async (token: string): Promise<boolean> => {
     try {
@@ -50,7 +48,7 @@ export const useAuth = () => {
   useEffect(() => {
     const checkAuth = async () => {
       // Skip auth check for public routes
-      const publicRoutes = ["/", "/auth/callback"];
+      const publicRoutes = ["/", "/auth/callback", "/login"];
       if (publicRoutes.includes(location.pathname)) {
         setLoading(false);
         return;

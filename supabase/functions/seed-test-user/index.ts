@@ -6,6 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -17,6 +25,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    const passwordHash = await hashPassword("12345678");
     const results: any = {};
 
     // 1. Upsert client user
@@ -27,6 +36,7 @@ serve(async (req) => {
         name: "James Richardson",
         auth_source: "external_auth",
         external_user_id: "client@yopmail.com",
+        password_hash: passwordHash,
         updated_at: new Date().toISOString(),
       }, { onConflict: "email" })
       .select()
@@ -42,6 +52,7 @@ serve(async (req) => {
         name: "Sarah Mitchell",
         auth_source: "external_auth",
         external_user_id: "admin@yopmail.com",
+        password_hash: passwordHash,
         updated_at: new Date().toISOString(),
       }, { onConflict: "email" })
       .select()
@@ -49,7 +60,7 @@ serve(async (req) => {
 
     if (adminErr) throw new Error(`Admin user error: ${adminErr.message}`);
 
-    // 3. Set roles in app_user_roles
+    // 3. Set roles
     await supabase.from("app_user_roles").upsert(
       { user_id: clientUser.id, role: "client" },
       { onConflict: "user_id,role" }
@@ -59,30 +70,24 @@ serve(async (req) => {
       { onConflict: "user_id,role" }
     );
 
-    // 4. Delete old sessions and create new ones
+    // 4. Create sessions
     await supabase.from("app_sessions").delete().eq("user_id", clientUser.id);
     await supabase.from("app_sessions").delete().eq("user_id", adminUser.id);
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // 30 day sessions for testing
+    expiresAt.setDate(expiresAt.getDate() + 30);
 
     const clientToken = crypto.randomUUID();
     const adminToken = crypto.randomUUID();
 
     await supabase.from("app_sessions").insert({
-      user_id: clientUser.id,
-      token: clientToken,
-      expires_at: expiresAt.toISOString(),
+      user_id: clientUser.id, token: clientToken, expires_at: expiresAt.toISOString(),
     });
-
     await supabase.from("app_sessions").insert({
-      user_id: adminUser.id,
-      token: adminToken,
-      expires_at: expiresAt.toISOString(),
+      user_id: adminUser.id, token: adminToken, expires_at: expiresAt.toISOString(),
     });
 
-    // 5. Seed demo holdings for client user
-    // First delete existing holdings for this user
+    // 5. Seed demo holdings
     await supabase.from("holdings").delete().eq("user_id", clientUser.id);
 
     const demoHoldings = [
@@ -102,14 +107,11 @@ serve(async (req) => {
 
     results.client = {
       user: { id: clientUser.id, email: clientUser.email, name: clientUser.name },
-      session_token: clientToken,
-      role: "client",
+      session_token: clientToken, role: "client",
     };
-
     results.admin = {
       user: { id: adminUser.id, email: adminUser.email, name: adminUser.name },
-      session_token: adminToken,
-      role: "admin",
+      session_token: adminToken, role: "admin",
     };
 
     return new Response(JSON.stringify({ success: true, accounts: results }), {
