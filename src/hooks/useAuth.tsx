@@ -48,7 +48,7 @@ export const useAuth = () => {
   useEffect(() => {
     const checkAuth = async () => {
       // Skip auth check for public routes
-      const publicRoutes = ["/", "/auth/callback"];
+      const publicRoutes = ["/", "/auth/callback", "/login"];
       if (publicRoutes.includes(location.pathname)) {
         setLoading(false);
         return;
