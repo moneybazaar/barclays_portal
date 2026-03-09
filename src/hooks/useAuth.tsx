@@ -19,10 +19,8 @@ export const useAuth = () => {
   const [userRole, setUserRole] = useState<"admin" | "moderator" | "user" | "client">("client");
 
   const redirectToLogin = useCallback(() => {
-    const currentPath = location.pathname;
-    const loginUrl = `${AUTH_PORTAL_URL}/olb/auth/login?redirect_to=${encodeURIComponent(currentPath)}`;
-    window.location.href = loginUrl;
-  }, [location.pathname]);
+    navigate(LOGIN_PATH, { replace: true });
+  }, [navigate]);
 
   const validateSession = useCallback(async (token: string): Promise<boolean> => {
     try {
