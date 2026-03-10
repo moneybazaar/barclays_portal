@@ -129,7 +129,7 @@ const LandingHeader = () => {
 
               {/* Client Login Button */}
               <Link
-                to="/dashboard"
+                to="/login"
                 className="px-5 py-2 bg-accent text-accent-foreground rounded-full font-medium text-sm hover:bg-accent/90 transition-colors"
               >
                 Client Login
@@ -343,7 +343,7 @@ const LandingHeader = () => {
                   Contact Us
                 </a>
                 <Link
-                  to="/dashboard"
+                  to="/login"
                   className="block w-full text-center py-3 bg-accent text-accent-foreground rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
