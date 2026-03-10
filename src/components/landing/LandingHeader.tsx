@@ -129,7 +129,7 @@ const LandingHeader = () => {
 
               {/* Client Login Button */}
               <Link
-                to="/dashboard"
+                to="/login"
                 className="px-5 py-2 bg-accent text-accent-foreground rounded-full font-medium text-sm hover:bg-accent/90 transition-colors"
               >
                 Client Login
