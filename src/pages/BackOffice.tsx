@@ -90,6 +90,10 @@ export default function BackOffice() {
   const [researchFormOpen, setResearchFormOpen] = useState(false);
   const [researchForm, setResearchForm] = useState({ title: "", summary: "", content: "", author: "" });
 
+  // KYC
+  const [kycClients, setKycClients] = useState<KycClient[]>([]);
+  const [kycLoading, setKycLoading] = useState(false);
+
   const getToken = () => localStorage.getItem("barclays_session_token");
 
   useEffect(() => {
