@@ -63,6 +63,8 @@ serve(async (req) => {
         let query = supabase.from("holdings").select("*").order("created_at", { ascending: false });
         if (!isAdmin) {
           query = query.eq("user_id", user.id);
+        } else if (user_id) {
+          query = query.eq("user_id", user_id);
         }
         const { data, error } = await query;
         if (error) throw error;
