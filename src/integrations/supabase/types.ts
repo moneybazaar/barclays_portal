@@ -84,6 +84,9 @@ export type Database = {
           email: string
           external_user_id: string | null
           id: string
+          kyc_reviewed_at: string | null
+          kyc_reviewed_by: string | null
+          kyc_status: string | null
           name: string | null
           password_hash: string | null
           phone: string | null
@@ -98,6 +101,9 @@ export type Database = {
           email: string
           external_user_id?: string | null
           id?: string
+          kyc_reviewed_at?: string | null
+          kyc_reviewed_by?: string | null
+          kyc_status?: string | null
           name?: string | null
           password_hash?: string | null
           phone?: string | null
@@ -112,6 +118,9 @@ export type Database = {
           email?: string
           external_user_id?: string | null
           id?: string
+          kyc_reviewed_at?: string | null
+          kyc_reviewed_by?: string | null
+          kyc_status?: string | null
           name?: string | null
           password_hash?: string | null
           phone?: string | null
