@@ -15,6 +15,7 @@ import Deposit from "./pages/Deposit";
 import Settings from "./pages/Settings";
 import BackOffice from "./pages/BackOffice";
 import FxHeatmap from "./pages/FxHeatmap";
+import KycUpload from "./pages/KycUpload";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
