@@ -25,6 +25,7 @@ export function DashboardNav({ username, userRole }: DashboardNavProps) {
     { label: "FX Heatmap", path: "/fx-heatmap" },
     { label: "Documents", path: "/documents" },
     { label: "Deposit", path: "/deposit" },
+    { label: "KYC", path: "/kyc" },
   ];
 
   return (

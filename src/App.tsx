@@ -65,6 +65,7 @@ const App = () => (
             <Route path="/deposit" element={<Deposit />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/backoffice" element={<BackOffice />} />
+            <Route path="/kyc" element={<KycUpload />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
