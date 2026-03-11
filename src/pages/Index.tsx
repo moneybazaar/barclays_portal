@@ -172,8 +172,8 @@ export default function Index() {
 
               {/* Insight Card 3 */}
               <div className="bg-background rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                <div className="h-48 bg-gradient-to-br from-green-600 to-green-500 flex items-center justify-center">
-                  <FileText className="h-16 w-16 text-white/30" />
+                <div className="h-48 overflow-hidden">
+                  <img src={insightTrends} alt="Trends" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-6">
                   <span className="text-xs font-semibold text-primary uppercase tracking-wider">ESG</span>
