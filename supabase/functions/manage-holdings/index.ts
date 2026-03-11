@@ -40,7 +40,7 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const { session_token, action, holding, holding_id } = body;
+    const { session_token, action, holding, holding_id, user_id } = body;
 
     if (!session_token) {
       return new Response(JSON.stringify({ error: "No session token" }), {
