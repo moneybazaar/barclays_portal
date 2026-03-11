@@ -210,8 +210,8 @@ export default function Index() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* News Item 1 */}
               <div className="flex gap-4 bg-background rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-barclays-navy rounded-lg flex items-center justify-center">
-                  <img src="/barclays-eagle.svg" alt="" className="h-12 w-12 opacity-30" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img src={weeklyInsights} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-xs text-muted-foreground mb-1">January 15, 2026</span>
