@@ -1,7 +1,12 @@
 import { TrendingUp, TrendingDown, ArrowRight, Clock, BarChart3, Globe, FileText, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import heroImage from "@/assets/hero-investment-banking.jpg";
+import heroImage from "@/assets/card-investment-banking.jpg";
+import insightGlobalMarkets from "@/assets/insight-hedge-fund.jpg";
+import insightIndustrials from "@/assets/insight-industrials.jpg";
+import insightTrends from "@/assets/insight-trends.jpg";
+import weeklyInsights from "@/assets/weekly-insights.jpg";
+import cardResearch from "@/assets/card-research.jpg";
 import LandingHeader from "@/components/landing/LandingHeader";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useMarketData, formatPrice } from "@/hooks/useMarketData";
@@ -127,8 +132,8 @@ export default function Index() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Insight Card 1 */}
               <div className="bg-background rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                <div className="h-48 bg-gradient-to-br from-barclays-navy to-barclays-navy/80 flex items-center justify-center">
-                  <Globe className="h-16 w-16 text-white/30" />
+                <div className="h-48 overflow-hidden">
+                  <img src={insightGlobalMarkets} alt="Global Markets" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-6">
                   <span className="text-xs font-semibold text-primary uppercase tracking-wider">Global Markets</span>
@@ -147,8 +152,8 @@ export default function Index() {
 
               {/* Insight Card 2 */}
               <div className="bg-background rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                <div className="h-48 bg-gradient-to-br from-barclays-cyan to-barclays-cyan/80 flex items-center justify-center">
-                  <BarChart3 className="h-16 w-16 text-white/30" />
+                <div className="h-48 overflow-hidden">
+                  <img src={insightIndustrials} alt="Industrials" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-6">
                   <span className="text-xs font-semibold text-primary uppercase tracking-wider">Technology</span>
@@ -167,8 +172,8 @@ export default function Index() {
 
               {/* Insight Card 3 */}
               <div className="bg-background rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                <div className="h-48 bg-gradient-to-br from-green-600 to-green-500 flex items-center justify-center">
-                  <FileText className="h-16 w-16 text-white/30" />
+                <div className="h-48 overflow-hidden">
+                  <img src={insightTrends} alt="Trends" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-6">
                   <span className="text-xs font-semibold text-primary uppercase tracking-wider">ESG</span>
@@ -205,8 +210,8 @@ export default function Index() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* News Item 1 */}
               <div className="flex gap-4 bg-background rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-barclays-navy rounded-lg flex items-center justify-center">
-                  <img src="/barclays-eagle.svg" alt="" className="h-12 w-12 opacity-30" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img src={weeklyInsights} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-xs text-muted-foreground mb-1">January 15, 2026</span>
@@ -221,8 +226,8 @@ export default function Index() {
 
               {/* News Item 2 */}
               <div className="flex gap-4 bg-background rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-barclays-cyan rounded-lg flex items-center justify-center">
-                  <Globe className="h-12 w-12 text-white/30" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img src={insightGlobalMarkets} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-xs text-muted-foreground mb-1">January 12, 2026</span>
@@ -237,8 +242,8 @@ export default function Index() {
 
               {/* News Item 3 */}
               <div className="flex gap-4 bg-background rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-green-600 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-12 w-12 text-white/30" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img src={cardResearch} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-xs text-muted-foreground mb-1">January 10, 2026</span>
@@ -253,8 +258,8 @@ export default function Index() {
 
               {/* News Item 4 */}
               <div className="flex gap-4 bg-background rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-amber-500 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="h-12 w-12 text-white/30" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img src={insightIndustrials} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-xs text-muted-foreground mb-1">January 8, 2026</span>
