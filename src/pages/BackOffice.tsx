@@ -317,6 +317,7 @@ export default function BackOffice() {
           if (v === "deposits") fetchDeposits();
           if (v === "documents") fetchDocuments();
           if (v === "research") fetchResearch();
+          if (v === "kyc") fetchKycClients();
         }}>
           <TabsList className="flex-wrap">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -325,6 +326,7 @@ export default function BackOffice() {
             <TabsTrigger value="deposits"><DollarSign className="h-4 w-4 mr-1" />Deposits</TabsTrigger>
             <TabsTrigger value="documents"><FileText className="h-4 w-4 mr-1" />Documents</TabsTrigger>
             <TabsTrigger value="research"><BookOpen className="h-4 w-4 mr-1" />Research</TabsTrigger>
+            <TabsTrigger value="kyc"><Shield className="h-4 w-4 mr-1" />KYC/AML</TabsTrigger>
           </TabsList>
 
           {/* Overview */}
