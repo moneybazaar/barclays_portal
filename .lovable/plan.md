@@ -1,116 +1,76 @@
 
 
-## Plan: Enable Login Flow and Minimal Operations
+## Add KYC/AML Document Upload & Storage
 
-### Current State
+The existing document system (`manage-documents` edge function + `client-documents` storage bucket + `documents` table) already supports file upload, download, and deletion. We need to extend it for KYC/AML-specific workflows.
 
-- **Database is empty**: No `app_users`, no `app_sessions`, no `holdings` data
-- **No `role` column** on `app_users` table - `useAuth` hardcodes everyone as `"client"`
-- **Auth depends on external portal** (`application.barclays-ib.app`) which verifies codes and creates sessions
-- **Holdings use Supabase Auth RLS** (`auth.uid()`) but login creates `app_users` records, not Supabase Auth users - so holdings queries will always fail
-- **Market data fallback shows $0.00** when Finnhub API fails
-- **2FA toggle in Settings** does nothing - just local state
-- **Dashboard links to `/research`** which was removed from navigation
-- **Settings page** uses hardcoded mock data instead of the logged-in user's info
+### What Changes
 
-### What Needs to Happen
+#### 1. Add KYC/AML document types to the system
 
-#### 1. Add `role` column to `app_users`
+The `documents.doc_type` column is a varchar — no migration needed. Add new types: `kyc_id`, `kyc_address_proof`, `kyc_selfie`, `aml_source_of_funds`, `aml_declaration`.
 
-Add a `role` column (default `'client'`) so the auth-callback can set roles and `useAuth` can read them.
+#### 2. Add KYC status tracking to `app_users`
 
-**Database migration:**
+**Database migration**: Add columns to `app_users`:
 ```sql
-ALTER TABLE app_users ADD COLUMN role VARCHAR DEFAULT 'client';
+ALTER TABLE app_users ADD COLUMN kyc_status VARCHAR DEFAULT 'pending';
+ALTER TABLE app_users ADD COLUMN kyc_reviewed_at TIMESTAMPTZ;
+ALTER TABLE app_users ADD COLUMN kyc_reviewed_by UUID;
 ```
 
-#### 2. Seed test accounts
+Status values: `pending`, `submitted`, `approved`, `rejected`
 
-Insert the two test users directly into the database:
+#### 3. Client-side KYC upload page
 
-- `client@yopmail.com` as role `client`
-- `admin@yopmail.com` as role `admin`
+**New file: `src/pages/KycUpload.tsx`**
 
-Create active sessions for both so they can log in immediately without needing the external portal.
+Client can:
+- Upload ID document (passport, driving licence)
+- Upload proof of address (utility bill, bank statement)
+- Upload selfie for identity verification
+- View current KYC status (pending/submitted/approved/rejected)
+- See which documents are already submitted
 
-#### 3. Update `useAuth.tsx` to support direct session login
+Uses the existing `manage-documents` edge function's `upload` action — but we need to allow **clients** to upload KYC docs (currently upload is admin-only).
 
-- Read `role` from `app_users` instead of hardcoding `"client"`
-- Also check `localStorage` for user data stored during session creation
-- This allows the seeded sessions to work
+#### 4. Update `manage-documents` edge function
 
-#### 4. Update `auth-callback` edge function
+Add a new action: `client-kyc-upload` — allows clients to upload only KYC/AML document types to their own folder. This keeps general uploads admin-only while allowing self-service KYC.
 
-- Set the `role` field when upserting users (default to `'client'`, or read from portal response)
+The flow:
+1. Client calls `client-kyc-upload` with file_name, doc_type (must be kyc_* or aml_*)
+2. Edge function creates signed upload URL + document record
+3. Client uploads file directly to storage using signed URL
+4. Edge function updates `app_users.kyc_status` to `submitted` once docs are uploaded
 
-#### 5. Fix market data fallback
+#### 5. Admin KYC review in BackOffice
 
-Update `supabase/functions/market-data/index.ts` to return realistic static prices instead of zeros when Finnhub fails:
-- S&P 500: ~$520
-- FTSE 100: ~$35
-- EUR/USD: ~$105
-- Gold: ~$215
+Add a "KYC/AML" tab in `BackOffice.tsx`:
+- List all clients with their KYC status
+- View uploaded KYC documents per client
+- Approve or reject KYC with notes
+- Admin action calls `admin-clients` edge function with new `update-kyc-status` action
 
-#### 6. Remove 2FA from Settings
+#### 6. Update `admin-clients` edge function
 
-Since 2FA is not functional (it's just a local toggle), remove the entire Security card from Settings as requested.
+Add action: `update-kyc-status` — sets `kyc_status`, `kyc_reviewed_at`, `kyc_reviewed_by` on `app_users`.
 
-#### 7. Fix Dashboard `/research` link
+#### 7. Add route
 
-Change the "View Details" link on Dashboard positions table from `/research` to `/investments`.
+Add `/kyc` route in `App.tsx` and link in `DashboardNav.tsx` for clients.
 
-#### 8. Remove `/research` route from App.tsx
+### Files Created
+- `src/pages/KycUpload.tsx`
 
-Clean up the dead route since Research Portal was removed.
+### Files Modified
+- `src/pages/BackOffice.tsx` — KYC/AML review tab
+- `src/components/DashboardNav.tsx` — KYC nav link for clients
+- `src/App.tsx` — `/kyc` route
+- `supabase/functions/manage-documents/index.ts` — `client-kyc-upload` action
+- `supabase/functions/admin-clients/index.ts` — `update-kyc-status` action
+- `.lovable/plan.md` — updated plan
 
-#### 9. Fix Settings to use logged-in user data
-
-Update Settings page to read user info from `useAuth` instead of hardcoded "John Smith" data.
-
-#### 10. Fix holdings RLS policies
-
-The holdings table uses `auth.uid()` for RLS, but the custom auth system creates `app_users` records (not Supabase Auth users). This means holdings will never load. Options:
-- Update RLS policies to work with the custom `app_sessions` token system (matching `app_users` to `app_sessions`)
-- Or seed holdings using the service role for demo purposes
-
-The plan will update the RLS policies on `holdings` to use the custom session token pattern (same as `app_users` and `app_sessions` tables), so holdings actually work for logged-in users.
-
----
-
-### Technical Details
-
-**Files to modify:**
-
-| File | Change |
-|------|--------|
-| `src/hooks/useAuth.tsx` | Read `role` from `app_users` data; support localStorage fallback |
-| `src/pages/Settings.tsx` | Remove 2FA section; load user data from `useAuth` |
-| `src/pages/Dashboard.tsx` | Change `/research` link to `/investments` |
-| `src/App.tsx` | Remove `/research` route import and route |
-| `supabase/functions/auth-callback/index.ts` | Include `role` in upsert |
-| `supabase/functions/market-data/index.ts` | Realistic fallback prices |
-
-**Database changes:**
-
-1. Add `role` column to `app_users`
-2. Insert test users: `client@yopmail.com` (client) and `admin@yopmail.com` (admin) with active sessions
-3. Update `holdings` RLS policies to use the custom session token pattern instead of `auth.uid()`
-4. Seed demo holdings for `client@yopmail.com`
-
-**New edge function:**
-
-Create `seed-test-user` to generate sessions for test accounts, returning tokens that can be stored in localStorage for immediate login.
-
----
-
-### Implementation Order
-
-1. Database migration: add `role` column, update holdings RLS
-2. Seed test users + sessions + demo holdings
-3. Update `useAuth.tsx` for role support
-4. Update `auth-callback` edge function
-5. Fix market data fallback prices
-6. Remove 2FA from Settings, wire up user data
-7. Remove `/research` route and fix Dashboard link
-8. Deploy edge functions and test both accounts
+### Database Migration
+- Add `kyc_status`, `kyc_reviewed_at`, `kyc_reviewed_by` columns to `app_users`
 
