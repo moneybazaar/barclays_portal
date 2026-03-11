@@ -57,6 +57,15 @@ interface ClientNote {
   created_at: string;
 }
 
+interface KycClient {
+  id: string;
+  email: string;
+  name: string | null;
+  kyc_status: string | null;
+  kyc_reviewed_at: string | null;
+  kyc_documents: { id: string; title: string; doc_type: string; created_at: string; file_path: string | null }[];
+}
+
 export default function BackOffice() {
   const { userRole, loading, user, username, signOut } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);

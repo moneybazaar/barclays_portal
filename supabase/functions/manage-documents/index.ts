@@ -143,6 +143,76 @@ serve(async (req) => {
         });
       }
 
+      case "client-kyc-upload": {
+        const kycDocTypes = ["kyc_id", "kyc_address_proof", "kyc_selfie", "aml_source_of_funds", "aml_declaration"];
+        const { doc_type, file_name, title: kycTitle } = body;
+
+        if (!doc_type || !kycDocTypes.includes(doc_type)) {
+          return new Response(JSON.stringify({ error: `doc_type must be one of: ${kycDocTypes.join(", ")}` }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        if (!file_name) {
+          return new Response(JSON.stringify({ error: "file_name required" }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const kycFilePath = `${user.id}/kyc/${Date.now()}-${file_name}`;
+        const { data: kycUploadData, error: kycUploadError } = await supabase.storage
+          .from("client-documents")
+          .createSignedUploadUrl(kycFilePath);
+        if (kycUploadError) throw kycUploadError;
+
+        const docTitle = kycTitle || doc_type.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+        const { data: kycDoc, error: kycDocError } = await supabase
+          .from("documents")
+          .insert({
+            user_id: user.id,
+            title: docTitle,
+            doc_type,
+            file_path: kycFilePath,
+            uploaded_by: user.id,
+          })
+          .select()
+          .single();
+        if (kycDocError) throw kycDocError;
+
+        await supabase.from("app_users").update({ kyc_status: "submitted" }).eq("id", user.id);
+
+        return new Response(JSON.stringify({
+          document: kycDoc,
+          upload_url: kycUploadData.signedUrl,
+          upload_token: kycUploadData.token,
+          file_path: kycFilePath,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      case "kyc-status": {
+        const kycTypes = ["kyc_id", "kyc_address_proof", "kyc_selfie", "aml_source_of_funds", "aml_declaration"];
+        const { data: kycDocs } = await supabase
+          .from("documents")
+          .select("*")
+          .eq("user_id", user.id)
+          .in("doc_type", kycTypes)
+          .order("created_at", { ascending: false });
+
+        const { data: userData } = await supabase
+          .from("app_users")
+          .select("kyc_status")
+          .eq("id", user.id)
+          .single();
+
+        return new Response(JSON.stringify({
+          kyc_status: userData?.kyc_status || "pending",
+          documents: kycDocs || [],
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       case "delete": {
         if (!isAdmin) {
           return new Response(JSON.stringify({ error: "Admin only" }), {
