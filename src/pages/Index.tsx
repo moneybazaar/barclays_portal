@@ -226,8 +226,8 @@ export default function Index() {
 
               {/* News Item 2 */}
               <div className="flex gap-4 bg-background rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-barclays-cyan rounded-lg flex items-center justify-center">
-                  <Globe className="h-12 w-12 text-white/30" />
+                <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img src={insightGlobalMarkets} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-xs text-muted-foreground mb-1">January 12, 2026</span>
