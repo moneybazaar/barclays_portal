@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Monitor, Moon, Sun, Loader2, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { DashboardNav } from "@/components/DashboardNav";
