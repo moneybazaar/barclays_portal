@@ -132,8 +132,8 @@ export default function Index() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Insight Card 1 */}
               <div className="bg-background rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                <div className="h-48 bg-gradient-to-br from-barclays-navy to-barclays-navy/80 flex items-center justify-center">
-                  <Globe className="h-16 w-16 text-white/30" />
+                <div className="h-48 overflow-hidden">
+                  <img src={insightGlobalMarkets} alt="Global Markets" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-6">
                   <span className="text-xs font-semibold text-primary uppercase tracking-wider">Global Markets</span>
