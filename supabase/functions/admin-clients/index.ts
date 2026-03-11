@@ -332,6 +332,67 @@ serve(async (req) => {
         });
       }
 
+      case "update-kyc-status": {
+        const { user_id, kyc_status, notes: kycNotes } = body;
+        if (!user_id || !kyc_status) {
+          return new Response(JSON.stringify({ error: "user_id and kyc_status required" }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        const validStatuses = ["pending", "submitted", "approved", "rejected"];
+        if (!validStatuses.includes(kyc_status)) {
+          return new Response(JSON.stringify({ error: `kyc_status must be one of: ${validStatuses.join(", ")}` }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const kycUpdate: any = {
+          kyc_status,
+          kyc_reviewed_at: new Date().toISOString(),
+          kyc_reviewed_by: auth.user.id,
+        };
+
+        const { error: kycErr } = await supabase.from("app_users").update(kycUpdate).eq("id", user_id);
+        if (kycErr) throw kycErr;
+
+        // Optionally add a note
+        if (kycNotes) {
+          await supabase.from("client_notes").insert({
+            user_id,
+            note: `KYC ${kyc_status}: ${kycNotes}`,
+            created_by: auth.user.id,
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      case "list-kyc-clients": {
+        const { data: users, error: usersErr } = await supabase
+          .from("app_users")
+          .select("id, email, name, kyc_status, kyc_reviewed_at")
+          .order("created_at", { ascending: false });
+        if (usersErr) throw usersErr;
+
+        const kycTypes = ["kyc_id", "kyc_address_proof", "kyc_selfie", "aml_source_of_funds", "aml_declaration"];
+        const { data: kycDocs } = await supabase
+          .from("documents")
+          .select("id, user_id, title, doc_type, created_at, file_path")
+          .in("doc_type", kycTypes)
+          .order("created_at", { ascending: false });
+
+        const kycClients = (users || []).map((u: any) => ({
+          ...u,
+          kyc_documents: (kycDocs || []).filter((d: any) => d.user_id === u.id),
+        }));
+
+        return new Response(JSON.stringify({ clients: kycClients }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

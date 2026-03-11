@@ -57,6 +57,15 @@ interface ClientNote {
   created_at: string;
 }
 
+interface KycClient {
+  id: string;
+  email: string;
+  name: string | null;
+  kyc_status: string | null;
+  kyc_reviewed_at: string | null;
+  kyc_documents: { id: string; title: string; doc_type: string; created_at: string; file_path: string | null }[];
+}
+
 export default function BackOffice() {
   const { userRole, loading, user, username, signOut } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -80,6 +89,10 @@ export default function BackOffice() {
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchFormOpen, setResearchFormOpen] = useState(false);
   const [researchForm, setResearchForm] = useState({ title: "", summary: "", content: "", author: "" });
+
+  // KYC
+  const [kycClients, setKycClients] = useState<KycClient[]>([]);
+  const [kycLoading, setKycLoading] = useState(false);
 
   const getToken = () => localStorage.getItem("barclays_session_token");
 
@@ -132,6 +145,30 @@ export default function BackOffice() {
     });
     setResearchPosts(data?.posts || []);
     setResearchLoading(false);
+  };
+
+  // Fetch KYC clients
+  const fetchKycClients = async () => {
+    setKycLoading(true);
+    const { data } = await supabase.functions.invoke("admin-clients", {
+      body: { session_token: getToken(), action: "list-kyc-clients" },
+    });
+    setKycClients(data?.clients || []);
+    setKycLoading(false);
+  };
+
+  const handleKycAction = async (userId: string, status: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-clients", {
+        body: { session_token: getToken(), action: "update-kyc-status", user_id: userId, kyc_status: status },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: `KYC ${status}` });
+      fetchKycClients();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   const formatAum = (value: number) => {
@@ -280,6 +317,7 @@ export default function BackOffice() {
           if (v === "deposits") fetchDeposits();
           if (v === "documents") fetchDocuments();
           if (v === "research") fetchResearch();
+          if (v === "kyc") fetchKycClients();
         }}>
           <TabsList className="flex-wrap">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -288,6 +326,7 @@ export default function BackOffice() {
             <TabsTrigger value="deposits"><DollarSign className="h-4 w-4 mr-1" />Deposits</TabsTrigger>
             <TabsTrigger value="documents"><FileText className="h-4 w-4 mr-1" />Documents</TabsTrigger>
             <TabsTrigger value="research"><BookOpen className="h-4 w-4 mr-1" />Research</TabsTrigger>
+            <TabsTrigger value="kyc"><Shield className="h-4 w-4 mr-1" />KYC/AML</TabsTrigger>
           </TabsList>
 
           {/* Overview */}
@@ -474,6 +513,71 @@ export default function BackOffice() {
                           <Button size="sm" variant="ghost" onClick={() => handleDeleteResearch(post.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          {/* KYC/AML */}
+          <TabsContent value="kyc" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>KYC / AML Review</CardTitle>
+                <p className="text-sm text-muted-foreground">Review client identity verification documents</p>
+              </CardHeader>
+              <CardContent>
+                {kycLoading ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                ) : kycClients.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">No clients found.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {kycClients.map(client => (
+                      <Card key={client.id}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <p className="font-semibold">{client.name || client.email}</p>
+                              <p className="text-sm text-muted-foreground">{client.email}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={
+                                client.kyc_status === "approved" ? "default" :
+                                client.kyc_status === "rejected" ? "destructive" :
+                                client.kyc_status === "submitted" ? "secondary" : "outline"
+                              } className="capitalize">
+                                {client.kyc_status || "pending"}
+                              </Badge>
+                              {client.kyc_status === "submitted" && (
+                                <div className="flex gap-1">
+                                  <Button size="sm" variant="default" onClick={() => handleKycAction(client.id, "approved")}>
+                                    <Check className="h-3 w-3 mr-1" />Approve
+                                  </Button>
+                                  <Button size="sm" variant="destructive" onClick={() => handleKycAction(client.id, "rejected")}>
+                                    <XIcon className="h-3 w-3 mr-1" />Reject
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {client.kyc_documents.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {client.kyc_documents.map(doc => (
+                                <div key={doc.id} className="flex items-center gap-2 p-2 rounded bg-muted text-sm">
+                                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate">{doc.title}</p>
+                                    <p className="text-xs text-muted-foreground">{doc.doc_type.replace(/_/g, " ")} · {new Date(doc.created_at).toLocaleDateString()}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">No KYC documents uploaded</p>
+                          )}
                         </CardContent>
                       </Card>
                     ))}

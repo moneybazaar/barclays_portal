@@ -1,0 +1,3 @@
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS kyc_status VARCHAR DEFAULT 'pending';
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS kyc_reviewed_at TIMESTAMPTZ;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS kyc_reviewed_by UUID;
