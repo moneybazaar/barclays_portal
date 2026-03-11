@@ -147,6 +147,30 @@ export default function BackOffice() {
     setResearchLoading(false);
   };
 
+  // Fetch KYC clients
+  const fetchKycClients = async () => {
+    setKycLoading(true);
+    const { data } = await supabase.functions.invoke("admin-clients", {
+      body: { session_token: getToken(), action: "list-kyc-clients" },
+    });
+    setKycClients(data?.clients || []);
+    setKycLoading(false);
+  };
+
+  const handleKycAction = async (userId: string, status: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-clients", {
+        body: { session_token: getToken(), action: "update-kyc-status", user_id: userId, kyc_status: status },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: `KYC ${status}` });
+      fetchKycClients();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   const formatAum = (value: number) => {
     if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
     if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
