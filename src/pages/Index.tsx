@@ -152,8 +152,8 @@ export default function Index() {
 
               {/* Insight Card 2 */}
               <div className="bg-background rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                <div className="h-48 bg-gradient-to-br from-barclays-cyan to-barclays-cyan/80 flex items-center justify-center">
-                  <BarChart3 className="h-16 w-16 text-white/30" />
+                <div className="h-48 overflow-hidden">
+                  <img src={insightIndustrials} alt="Industrials" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-6">
                   <span className="text-xs font-semibold text-primary uppercase tracking-wider">Technology</span>
