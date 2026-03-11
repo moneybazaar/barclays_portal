@@ -26,3 +26,15 @@ verify_jwt = false
 
 [functions.admin-clients]
 verify_jwt = false
+
+[functions.update-profile]
+verify_jwt = false
+
+[functions.manage-documents]
+verify_jwt = false
+
+[functions.manage-deposits]
+verify_jwt = false
+
+[functions.login]
+verify_jwt = false

@@ -77,36 +77,189 @@ export type Database = {
       }
       app_users: {
         Row: {
+          address: string | null
           auth_source: string | null
+          company: string | null
           created_at: string | null
           email: string
           external_user_id: string | null
           id: string
           name: string | null
           password_hash: string | null
+          phone: string | null
+          theme_preference: string | null
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           auth_source?: string | null
+          company?: string | null
           created_at?: string | null
           email: string
           external_user_id?: string | null
           id?: string
           name?: string | null
           password_hash?: string | null
+          phone?: string | null
+          theme_preference?: string | null
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           auth_source?: string | null
+          company?: string | null
           created_at?: string | null
           email?: string
           external_user_id?: string | null
           id?: string
           name?: string | null
           password_hash?: string | null
+          phone?: string | null
+          theme_preference?: string | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      client_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deposits: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          invoice_url: string | null
+          received_at: string | null
+          reference_code: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          invoice_url?: string | null
+          received_at?: string | null
+          reference_code: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          invoice_url?: string | null
+          received_at?: string | null
+          reference_code?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deposits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deposits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          created_at: string
+          doc_type: string
+          file_path: string | null
+          file_url: string | null
+          id: string
+          title: string
+          uploaded_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doc_type?: string
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          title: string
+          uploaded_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          title?: string
+          uploaded_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       holdings: {
         Row: {
@@ -291,6 +444,39 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      research_posts: {
+        Row: {
+          author: string | null
+          content: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          published_at: string | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          author?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published_at?: string | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          author?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published_at?: string | null
+          summary?: string | null
+          title?: string
         }
         Relationships: []
       }

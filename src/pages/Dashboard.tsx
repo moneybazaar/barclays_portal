@@ -1,62 +1,109 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useHoldings } from "@/hooks/useHoldings";
 import { Header } from "@/components/Header";
 import { DashboardNav } from "@/components/DashboardNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, Settings, FileText, TrendingUp } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Users, TrendingUp, FileText, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const portfolioData = [
-  { month: "Jan", value: 245000 },
-  { month: "Feb", value: 268000 },
-  { month: "Mar", value: 285000 },
-  { month: "Apr", value: 295000 },
-  { month: "May", value: 310000 },
-  { month: "Jun", value: 338000 },
-];
-
-const performanceData = [
-  { month: "Jan", portfolio: 2.3, benchmark: 1.8 },
-  { month: "Feb", portfolio: 3.1, benchmark: 2.5 },
-  { month: "Mar", portfolio: 2.8, benchmark: 2.2 },
-  { month: "Apr", portfolio: 3.5, benchmark: 2.9 },
-  { month: "May", portfolio: 4.2, benchmark: 3.4 },
-  { month: "Jun", portfolio: 4.8, benchmark: 3.8 },
-];
-
-const assetAllocation = [
-  { name: "Equities", value: 45 },
-  { name: "Fixed Income", value: 30 },
-  { name: "Alternatives", value: 15 },
-  { name: "Cash", value: 10 },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const COLORS = ["#00A9E0", "#005EB8", "#FFB81C", "#002B5C"];
+const ASSET_LABELS: Record<string, string> = {
+  stock: "Equities",
+  bond: "Fixed Income",
+  fund: "Funds",
+  cd: "Cash & CDs",
+};
 
 const Dashboard = () => {
   const { user, loading, username, userRole, signOut } = useAuth();
-  const [timeRange, setTimeRange] = useState<"3m" | "6m" | "ytd">("ytd");
-  const [liveUpdate, setLiveUpdate] = useState(0);
-  const [portfolioValue, setPortfolioValue] = useState(12.45);
-  const [monthlyReturn, setMonthlyReturn] = useState(4.8);
-  const [cashAvailable, setCashAvailable] = useState(1.24);
+  const { holdings, totalValue, loading: holdingsLoading } = useHoldings();
+  const [adminStats, setAdminStats] = useState<{ totalClients: number; totalAum: number; totalPositions: number } | null>(null);
 
-  // Real-time updates every 3 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveUpdate(prev => prev + 1);
-      // Simulate small market fluctuations (-0.5% to +0.5%)
-      setPortfolioValue(prev => prev + (Math.random() - 0.5) * 0.06);
-      setMonthlyReturn(prev => prev + (Math.random() - 0.5) * 0.2);
-      setCashAvailable(prev => prev + (Math.random() - 0.5) * 0.01);
-    }, 3000);
+    if (userRole === "admin") {
+      const token = localStorage.getItem("barclays_session_token");
+      if (!token) return;
+      supabase.functions.invoke("admin-clients", {
+        body: { session_token: token, action: "get-stats" },
+      }).then(({ data }) => {
+        if (data && !data.error) setAdminStats(data);
+      });
+    }
+  }, [userRole]);
 
-    return () => clearInterval(interval);
-  }, []);
+  // Compute portfolio metrics from real holdings
+  const { assetAllocation, portfolioGrowth, positions, totalPL, plPercent } = useMemo(() => {
+    if (!holdings.length) return { assetAllocation: [], portfolioGrowth: [], positions: [], totalPL: 0, plPercent: 0 };
+
+    // Asset allocation
+    const typeMap: Record<string, number> = {};
+    let totalCost = 0;
+    holdings.forEach(h => {
+      const qty = Number(h.shares || h.units || h.principal || 0);
+      const val = qty * Number(h.current_price);
+      const cost = qty * Number(h.purchase_price);
+      typeMap[h.asset_type] = (typeMap[h.asset_type] || 0) + val;
+      totalCost += cost;
+    });
+
+    const assetAllocation = Object.entries(typeMap).map(([type, value]) => ({
+      name: ASSET_LABELS[type] || type,
+      value: Math.round(value),
+    }));
+
+    // Portfolio growth from holdings created_at dates
+    const sorted = [...holdings].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    let cumulative = 0;
+    const growthMap: Record<string, number> = {};
+    sorted.forEach(h => {
+      const qty = Number(h.shares || h.units || h.principal || 0);
+      cumulative += qty * Number(h.current_price);
+      const month = new Date(h.created_at).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+      growthMap[month] = cumulative;
+    });
+    const portfolioGrowth = Object.entries(growthMap).map(([month, value]) => ({ month, value }));
+
+    // Positions table grouped by asset type
+    const posMap: Record<string, { value: number; cost: number; count: number }> = {};
+    holdings.forEach(h => {
+      const qty = Number(h.shares || h.units || h.principal || 0);
+      const val = qty * Number(h.current_price);
+      const cost = qty * Number(h.purchase_price);
+      if (!posMap[h.asset_type]) posMap[h.asset_type] = { value: 0, cost: 0, count: 0 };
+      posMap[h.asset_type].value += val;
+      posMap[h.asset_type].cost += cost;
+      posMap[h.asset_type].count += 1;
+    });
+    const positions = Object.entries(posMap).map(([type, data]) => ({
+      name: ASSET_LABELS[type] || type,
+      type,
+      value: data.value,
+      cost: data.cost,
+      count: data.count,
+      change: data.cost > 0 ? ((data.value - data.cost) / data.cost) * 100 : 0,
+    }));
+
+    const totalPL = totalValue - totalCost;
+    const plPercent = totalCost > 0 ? (totalPL / totalCost) * 100 : 0;
+
+    return { assetAllocation, portfolioGrowth, positions, totalPL, plPercent };
+  }, [holdings, totalValue]);
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+    return `$${value.toFixed(0)}`;
+  };
+
+  const formatAum = (value: number) => {
+    if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+    return formatCurrency(value);
+  };
 
   if (loading) {
     return (
@@ -66,47 +113,8 @@ const Dashboard = () => {
     );
   }
 
-  const positions = [
-    { 
-      activity: "Global Equity Fund", 
-      investmentSize: 2450000, 
-      stocks: 1200000, 
-      bonds: 650000, 
-      funds: 400000, 
-      cds: 200000, 
-      change: 9.4 
-    },
-    { 
-      activity: "Fixed Income Fund", 
-      investmentSize: 1250000, 
-      stocks: 300000, 
-      bonds: 550000, 
-      funds: 250000, 
-      cds: 150000, 
-      change: 2.8 
-    },
-    { 
-      activity: "Alternative Assets", 
-      investmentSize: 850000, 
-      stocks: 400000, 
-      bonds: 200000, 
-      funds: 150000, 
-      cds: 100000, 
-      change: 7.3 
-    },
-    { 
-      activity: "Private Equity", 
-      investmentSize: 500000, 
-      stocks: 250000, 
-      bonds: 100000, 
-      funds: 100000, 
-      cds: 50000, 
-      change: -4.4 
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/30">
       <Header username={username} userEmail={user?.email} onSignOut={signOut} />
       <DashboardNav username={username} userRole={userRole} />
 
@@ -117,64 +125,52 @@ const Dashboard = () => {
               <h1 className="text-3xl font-bold text-foreground">
                 {userRole === "admin" ? "Admin Portal" : "Portfolio Overview"}
               </h1>
-              <Badge variant="outline" className="gap-2 animate-pulse">
-                <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                Live
-              </Badge>
-              {userRole === "admin" && (
-                <Badge variant="destructive">Admin</Badge>
-              )}
+              {userRole === "admin" && <Badge variant="destructive">Admin</Badge>}
             </div>
             <p className="text-muted-foreground">
-              {userRole === "admin" 
+              {userRole === "admin"
                 ? `Welcome, ${username}. You have full administrative access.`
-                : `Welcome back, ${username}`
-              }
+                : `Welcome back, ${username}`}
             </p>
           </div>
 
           {userRole === "admin" && (
-            <div className="grid md:grid-cols-4 gap-4 p-4 bg-accent/10 rounded-lg border-2 border-accent/30">
-              <Card className="shadow-md bg-white border-0">
+            <div className="grid md:grid-cols-3 gap-4 p-4 bg-accent/10 rounded-lg border-2 border-accent/30">
+              <Card className="shadow-md border-0">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
                     <Users className="h-8 w-8 text-accent" />
                     <div>
                       <p className="text-sm text-muted-foreground">Total Clients</p>
-                      <p className="text-2xl font-bold">1,247</p>
+                      <p className="text-2xl font-bold">
+                        {adminStats ? adminStats.totalClients : <Loader2 className="h-5 w-5 animate-spin" />}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="shadow-md bg-white border-0">
+              <Card className="shadow-md border-0">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
                     <TrendingUp className="h-8 w-8 text-accent" />
                     <div>
                       <p className="text-sm text-muted-foreground">Total AUM</p>
-                      <p className="text-2xl font-bold">£2.4B</p>
+                      <p className="text-2xl font-bold">
+                        {adminStats ? formatAum(adminStats.totalAum) : <Loader2 className="h-5 w-5 animate-spin" />}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="shadow-md bg-white border-0">
+              <Card className="shadow-md border-0">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
                     <FileText className="h-8 w-8 text-accent" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Active Orders</p>
-                      <p className="text-2xl font-bold">342</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="shadow-md bg-white border-0">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <Settings className="h-8 w-8 text-accent" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">System Status</p>
-                      <p className="text-2xl font-bold text-green-600">Healthy</p>
+                      <p className="text-sm text-muted-foreground">Total Positions</p>
+                      <p className="text-2xl font-bold">
+                        {adminStats ? adminStats.totalPositions : <Loader2 className="h-5 w-5 animate-spin" />}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -198,253 +194,172 @@ const Dashboard = () => {
             </Card>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="bg-white border-0 shadow-md hover:shadow-lg transition-all">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Portfolio Value</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground transition-all duration-500">
-                  ${portfolioValue.toFixed(2)}M
-                </div>
-                <p className="text-sm text-green-600 mt-2 font-medium">+12.5% YTD</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-0 shadow-md hover:shadow-lg transition-all">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Cash Available</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground transition-all duration-500">
-                  ${cashAvailable.toFixed(2)}M
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">Ready to invest</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-0 shadow-md hover:shadow-lg transition-all">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Return</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground transition-all duration-500">
-                  +{monthlyReturn.toFixed(1)}%
-                </div>
-                <p className="text-sm text-green-600 mt-2 font-medium">+1.2% vs benchmark</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-0 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Active Positions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">24</div>
-                <p className="text-sm text-muted-foreground mt-2">Across 6 asset classes</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="bg-white border-0 shadow-md">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Portfolio Growth</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={portfolioData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" stroke="#999" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#999" style={{ fontSize: '12px' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                    <Line type="monotone" dataKey="value" stroke="#00A9E0" strokeWidth={3} dot={{ fill: '#00A9E0', r: 4 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-0 shadow-md">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Performance vs Benchmark</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" stroke="#999" style={{ fontSize: '12px' }} />
-                    <YAxis stroke="#999" style={{ fontSize: '12px' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                    <Bar dataKey="portfolio" fill="#00A9E0" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="benchmark" fill="#005EB8" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="bg-white border-0 shadow-md">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Asset Allocation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={assetAllocation}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {assetAllocation.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-0 shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
-              <div>
-                <CardTitle className="text-xl font-bold">Investment Positions</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">Real-time overview of your portfolio holdings</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as any)}>
-                  <TabsList className="bg-muted">
-                    <TabsTrigger value="3m">3M</TabsTrigger>
-                    <TabsTrigger value="6m">6M</TabsTrigger>
-                    <TabsTrigger value="ytd">YTD</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <Link to="/investments">
-                  <Button variant="link" className="gap-1 text-accent">
-                    View Details →
-                  </Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      <th className="pb-4">Activity</th>
-                      <th className="pb-4 text-right">Investment Size ($)</th>
-                      <th className="pb-4 text-right">Stocks</th>
-                      <th className="pb-4 text-right">Bonds</th>
-                      <th className="pb-4 text-right">Funds</th>
-                      <th className="pb-4 text-right">CDs</th>
-                      <th className="pb-4 text-right">Change %</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {positions.map((pos, idx) => {
-                      // Add small random fluctuations to simulate live updates
-                      const liveChange = pos.change + (Math.random() - 0.5) * 0.5;
-                      const liveValue = pos.investmentSize * (1 + liveChange / 100);
-                      
-                      return (
-                        <tr key={idx} className="border-b hover:bg-accent/5 transition-colors">
-                          <td className="py-4 font-semibold text-foreground">{pos.activity}</td>
-                          <td className="py-4 text-right font-medium transition-all duration-500">
-                            ${liveValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                          </td>
-                          <td className="py-4 text-right">${pos.stocks.toLocaleString()}</td>
-                          <td className="py-4 text-right">${pos.bonds.toLocaleString()}</td>
-                          <td className="py-4 text-right">${pos.funds.toLocaleString()}</td>
-                          <td className="py-4 text-right">${pos.cds.toLocaleString()}</td>
-                          <td className={`py-4 text-right font-bold transition-all duration-500 ${liveChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {liveChange >= 0 ? '+' : ''}{liveChange.toFixed(1)}%
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="bg-white border-0 shadow-md">
-              <CardHeader>
-                <CardTitle>Mandates Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded">
-                    <span className="text-sm font-medium">Active</span>
-                    <Badge variant="default">12</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded">
-                    <span className="text-sm font-medium">Under Review</span>
-                    <Badge variant="secondary">5</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded">
-                    <span className="text-sm font-medium">Closed</span>
-                    <Badge variant="outline">23</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-0 shadow-md">
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-3 pb-3 border-b">
-                    <div className="h-2 w-2 rounded-full bg-accent mt-1.5" />
-                    <div>
-                      <p className="font-medium">Capital call processed</p>
-                      <p className="text-xs text-muted-foreground">PE Fund I - £250,000</p>
+          {holdingsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="border-0 shadow-md hover:shadow-lg transition-all">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Portfolio Value</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground">{formatCurrency(totalValue)}</div>
+                    <p className={`text-sm mt-2 font-medium ${plPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {plPercent >= 0 ? '+' : ''}{plPercent.toFixed(1)}% Overall
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-md hover:shadow-lg transition-all">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total P/L</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-3xl font-bold ${totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {totalPL >= 0 ? '+' : ''}{formatCurrency(totalPL)}
                     </div>
+                    <p className="text-sm text-muted-foreground mt-2">Unrealized gains</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-md hover:shadow-lg transition-all">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Active Positions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground">{holdings.length}</div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Across {new Set(holdings.map(h => h.asset_type)).size} asset classes
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-md hover:shadow-lg transition-all">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Asset Types</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground">{assetAllocation.length}</div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {assetAllocation.map(a => a.name).join(", ") || "None"}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card className="border-0 shadow-md">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold">Portfolio Growth</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {portfolioGrowth.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={portfolioGrowth}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} tickFormatter={(v) => formatCurrency(v)} />
+                          <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                          <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ fill: 'hsl(var(--primary))', r: 4 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                        No holdings data yet. Add investments to see growth.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-0 shadow-md">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold">Asset Allocation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {assetAllocation.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={assetAllocation}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={100}
+                            dataKey="value"
+                          >
+                            {assetAllocation.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                        No holdings data yet.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="border-0 shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+                  <div>
+                    <CardTitle className="text-xl font-bold">Investment Positions</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">Portfolio holdings by asset class</p>
                   </div>
-                  <div className="flex items-start gap-3 pb-3 border-b">
-                    <div className="h-2 w-2 rounded-full bg-green-600 mt-1.5" />
-                    <div>
-                      <p className="font-medium">Distribution received</p>
-                      <p className="text-xs text-muted-foreground">Credit Fund II - £85,000</p>
+                  <Link to="/investments">
+                    <Button variant="link" className="gap-1 text-accent">View Details →</Button>
+                  </Link>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {positions.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <th className="pb-4">Asset Class</th>
+                            <th className="pb-4 text-right">Holdings</th>
+                            <th className="pb-4 text-right">Cost Basis</th>
+                            <th className="pb-4 text-right">Current Value</th>
+                            <th className="pb-4 text-right">Change %</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                          {positions.map((pos) => (
+                            <tr key={pos.type} className="border-b hover:bg-accent/5 transition-colors">
+                              <td className="py-4 font-semibold text-foreground">{pos.name}</td>
+                              <td className="py-4 text-right">{pos.count}</td>
+                              <td className="py-4 text-right">{formatCurrency(pos.cost)}</td>
+                              <td className="py-4 text-right font-medium">{formatCurrency(pos.value)}</td>
+                              <td className={`py-4 text-right font-bold ${pos.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {pos.change >= 0 ? '+' : ''}{pos.change.toFixed(1)}%
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="font-bold">
+                            <td className="py-4">Total</td>
+                            <td className="py-4 text-right">{holdings.length}</td>
+                            <td className="py-4 text-right">{formatCurrency(positions.reduce((s, p) => s + p.cost, 0))}</td>
+                            <td className="py-4 text-right">{formatCurrency(totalValue)}</td>
+                            <td className={`py-4 text-right ${plPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {plPercent >= 0 ? '+' : ''}{plPercent.toFixed(1)}%
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="h-2 w-2 rounded-full bg-muted-foreground mt-1.5" />
-                    <div>
-                      <p className="font-medium">Quarterly report available</p>
-                      <p className="text-xs text-muted-foreground">Q4 2024 Performance</p>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No holdings yet. Visit <Link to="/investments" className="text-accent underline">Investments</Link> to add positions.</p>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       </main>
     </div>

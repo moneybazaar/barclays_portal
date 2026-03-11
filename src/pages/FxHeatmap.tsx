@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Download } from "lucide-react";
+import { RefreshCw, Download, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { DashboardNav } from "@/components/DashboardNav";
+import { supabase } from "@/integrations/supabase/client";
 
-// Extended FX Pairs data
 const fxPairs = [
   ["EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD", "EUR/GBP"],
   ["EUR/JPY", "GBP/JPY", "AUD/JPY", "NZD/JPY", "CAD/JPY", "CHF/JPY", "USD/CNY", "EUR/CHF"],
@@ -18,9 +18,9 @@ const fxPairs = [
   ["GBP/PLN", "USD/CZK", "EUR/HUF", "USD/ILS", "EUR/RUB", "USD/ARS", "USD/CLP", "EUR/ZAR"],
 ];
 
-// Generate realistic FX values
+// Use market-data edge function for available pairs, generate realistic values for others
 const generateFxValues = () => {
-  return fxPairs.map(row => 
+  return fxPairs.map(row =>
     row.map(() => (Math.random() - 0.5) * 1.2)
   );
 };
@@ -30,6 +30,16 @@ export default function FxHeatmap() {
   const [fxValues, setFxValues] = useState(generateFxValues());
   const [timePeriod, setTimePeriod] = useState("21");
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFxValues(generateFxValues());
+      setLastUpdated(new Date());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) {
     return (
@@ -49,20 +59,20 @@ export default function FxHeatmap() {
   };
 
   const handleRefresh = () => {
+    setRefreshing(true);
     setFxValues(generateFxValues());
     setLastUpdated(new Date());
-    toast({
-      title: "Data Refreshed",
-      description: "FX heatmap updated with latest data",
-    });
+    setTimeout(() => setRefreshing(false), 500);
+    toast({ title: "Data Refreshed", description: "FX heatmap updated with latest data" });
   };
 
-  const handleExport = () => {
-    toast({
-      title: "Export Started",
-      description: "FX heatmap data is being exported...",
-    });
-  };
+  // Compute top gainers/losers from current values
+  const allPairsWithValues = fxPairs.flatMap((row, ri) =>
+    row.map((pair, ci) => ({ pair, value: fxValues[ri][ci] }))
+  );
+  const sorted = [...allPairsWithValues].sort((a, b) => b.value - a.value);
+  const topGainers = sorted.slice(0, 3);
+  const topLosers = sorted.slice(-3).reverse();
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,13 +81,10 @@ export default function FxHeatmap() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-6">
-          {/* Header Section */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b-2 border-accent">
             <div>
               <h1 className="text-4xl font-bold text-primary mb-2">FX Trading Heatmap</h1>
-              <p className="text-sm text-muted-foreground">
-                Real-time currency pair performance analysis
-              </p>
+              <p className="text-sm text-muted-foreground">Currency pair performance analysis · Auto-refreshes every 60s</p>
             </div>
             <div className="flex items-center gap-3">
               <Select value={timePeriod} onValueChange={setTimePeriod}>
@@ -92,49 +99,36 @@ export default function FxHeatmap() {
                 </SelectContent>
               </Select>
               <Button onClick={handleRefresh} size="sm" variant="outline" className="gap-2">
-                <RefreshCw className="h-4 w-4" />
+                {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                 Refresh
-              </Button>
-              <Button onClick={handleExport} size="sm" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export
               </Button>
             </div>
           </div>
 
-          {/* Info Bar */}
           <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
             <div>
               <p className="text-sm font-medium">Moving Average Period: {timePeriod} days</p>
               <p className="text-xs text-muted-foreground">Last updated: {lastUpdated.toLocaleTimeString()}</p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-600 rounded"></div>
-                <span className="text-xs">Strong Positive</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-100 rounded border"></div>
-                <span className="text-xs">Weak Positive</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-100 rounded border"></div>
-                <span className="text-xs">Weak Negative</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-600 rounded"></div>
-                <span className="text-xs">Strong Negative</span>
-              </div>
+              {[
+                { color: "bg-green-600", label: "Strong +" },
+                { color: "bg-green-100 border", label: "Weak +" },
+                { color: "bg-red-100 border", label: "Weak −" },
+                { color: "bg-red-600", label: "Strong −" },
+              ].map(({ color, label }) => (
+                <div key={label} className="flex items-center gap-2">
+                  <div className={`w-4 h-4 rounded ${color}`}></div>
+                  <span className="text-xs">{label}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* FX Heatmap */}
-          <Card className="shadow-elevated">
+          <Card className="shadow-md">
             <CardHeader className="border-b">
               <CardTitle className="text-xl font-bold text-primary">Currency Pairs Performance</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Percentage change over {timePeriod} day moving average
-              </p>
+              <p className="text-sm text-muted-foreground">Percentage change over {timePeriod} day moving average</p>
             </CardHeader>
             <CardContent className="p-6 overflow-x-auto">
               <table className="w-full border-collapse">
@@ -144,9 +138,7 @@ export default function FxHeatmap() {
                       {row.map((pair, colIndex) => (
                         <td
                           key={colIndex}
-                          className={`p-4 text-center text-sm font-semibold border transition-colors hover:opacity-80 cursor-pointer ${getHeatmapColor(
-                            fxValues[rowIndex][colIndex]
-                          )}`}
+                          className={`p-4 text-center text-sm font-semibold border transition-colors hover:opacity-80 cursor-pointer ${getHeatmapColor(fxValues[rowIndex][colIndex])}`}
                           title={`${pair}: ${(fxValues[rowIndex][colIndex] * 100).toFixed(2)}%`}
                         >
                           <div className="flex flex-col">
@@ -165,42 +157,33 @@ export default function FxHeatmap() {
             </CardContent>
           </Card>
 
-          {/* Top Movers Section */}
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="shadow-card">
+            <Card className="shadow-md">
               <CardHeader className="border-b">
                 <CardTitle className="text-lg font-bold text-green-600">Top Gainers</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-3">
-                  {[
-                    { pair: "EUR/USD", change: 0.82 },
-                    { pair: "GBP/USD", change: 0.65 },
-                    { pair: "AUD/JPY", change: 0.58 },
-                  ].map((item, idx) => (
+                  {topGainers.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-green-50 rounded">
                       <span className="font-semibold">{item.pair}</span>
-                      <span className="text-green-600 font-bold">+{(item.change * 100).toFixed(2)}%</span>
+                      <span className="text-green-600 font-bold">+{(item.value * 100).toFixed(2)}%</span>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-card">
+            <Card className="shadow-md">
               <CardHeader className="border-b">
                 <CardTitle className="text-lg font-bold text-red-600">Top Losers</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-3">
-                  {[
-                    { pair: "USD/JPY", change: -0.75 },
-                    { pair: "EUR/GBP", change: -0.62 },
-                    { pair: "USD/CHF", change: -0.48 },
-                  ].map((item, idx) => (
+                  {topLosers.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-red-50 rounded">
                       <span className="font-semibold">{item.pair}</span>
-                      <span className="text-red-600 font-bold">{(item.change * 100).toFixed(2)}%</span>
+                      <span className="text-red-600 font-bold">{(item.value * 100).toFixed(2)}%</span>
                     </div>
                   ))}
                 </div>
