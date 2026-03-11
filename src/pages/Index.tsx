@@ -1,7 +1,12 @@
 import { TrendingUp, TrendingDown, ArrowRight, Clock, BarChart3, Globe, FileText, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import heroImage from "@/assets/hero-investment-banking.jpg";
+import heroImage from "@/assets/card-investment-banking.jpg";
+import insightGlobalMarkets from "@/assets/insight-hedge-fund.jpg";
+import insightIndustrials from "@/assets/insight-industrials.jpg";
+import insightTrends from "@/assets/insight-trends.jpg";
+import weeklyInsights from "@/assets/weekly-insights.jpg";
+import cardResearch from "@/assets/card-research.jpg";
 import LandingHeader from "@/components/landing/LandingHeader";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useMarketData, formatPrice } from "@/hooks/useMarketData";
