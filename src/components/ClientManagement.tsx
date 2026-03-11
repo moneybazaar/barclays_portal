@@ -1,21 +1,19 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Users, Eye, Plus } from "lucide-react";
+import { Loader2, Search, Users, Eye } from "lucide-react";
 import { AdminHoldingsDialog } from "./AdminHoldingsDialog";
 
-interface Profile {
+interface ClientWithStats {
   id: string;
   email: string;
-  full_name: string | null;
+  name: string | null;
+  role: string;
   created_at: string;
-}
-
-interface ClientWithStats extends Profile {
   totalValue: number;
   holdingsCount: number;
 }
@@ -31,38 +29,17 @@ export const ClientManagement = () => {
   const fetchClients = async () => {
     try {
       setLoading(true);
-      
-      // Fetch all profiles (admin RLS allows this)
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const sessionToken = localStorage.getItem("barclays_session_token");
+      if (!sessionToken) throw new Error("No session");
 
-      if (profilesError) throw profilesError;
-
-      // Fetch all holdings to calculate stats
-      const { data: holdings, error: holdingsError } = await supabase
-        .from("holdings")
-        .select("user_id, shares, units, principal, current_price");
-
-      if (holdingsError) throw holdingsError;
-
-      // Calculate stats per client
-      const clientsWithStats: ClientWithStats[] = (profiles || []).map((profile) => {
-        const userHoldings = (holdings || []).filter((h) => h.user_id === profile.id);
-        const totalValue = userHoldings.reduce((sum, h) => {
-          const quantity = h.shares || h.units || h.principal || 0;
-          return sum + Number(quantity) * Number(h.current_price);
-        }, 0);
-
-        return {
-          ...profile,
-          totalValue,
-          holdingsCount: userHoldings.length,
-        };
+      const { data, error } = await supabase.functions.invoke("admin-clients", {
+        body: { session_token: sessionToken, action: "list-clients" },
       });
 
-      setClients(clientsWithStats);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setClients(data.clients || []);
     } catch (error: any) {
       toast({
         title: "Error fetching clients",
@@ -81,7 +58,7 @@ export const ClientManagement = () => {
   const filteredClients = clients.filter(
     (client) =>
       client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.full_name?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+      (client.name?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
 
   const handleManageHoldings = (client: ClientWithStats) => {
@@ -92,15 +69,12 @@ export const ClientManagement = () => {
   const handleDialogClose = () => {
     setHoldingsDialogOpen(false);
     setSelectedClient(null);
-    fetchClients(); // Refresh stats after changes
+    fetchClients();
   };
 
   const formatCurrency = (value: number) => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(2)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(1)}K`;
-    }
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
     return `$${value.toFixed(0)}`;
   };
 
@@ -141,50 +115,32 @@ export const ClientManagement = () => {
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr className="border-b">
-                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
-                  Client
-                </th>
-                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
-                  Email
-                </th>
-                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
-                  Holdings
-                </th>
-                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
-                  Portfolio Value
-                </th>
-                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
-                  Joined
-                </th>
-                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">
-                  Actions
-                </th>
+                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Client</th>
+                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Email</th>
+                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Role</th>
+                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Holdings</th>
+                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Portfolio Value</th>
+                <th className="text-left p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Joined</th>
+                <th className="text-right p-4 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-background">
               {filteredClients.map((client) => (
                 <tr key={client.id} className="border-b hover:bg-muted/30 transition-colors">
-                  <td className="p-4">
-                    <div className="font-medium">
-                      {client.full_name || "—"}
-                    </div>
-                  </td>
+                  <td className="p-4 font-medium">{client.name || "—"}</td>
                   <td className="p-4 text-muted-foreground">{client.email}</td>
+                  <td className="p-4">
+                    <Badge variant={client.role === "admin" ? "destructive" : "secondary"} className="capitalize">
+                      {client.role}
+                    </Badge>
+                  </td>
                   <td className="p-4 text-right">
                     <Badge variant="secondary">{client.holdingsCount}</Badge>
                   </td>
-                  <td className="p-4 text-right font-semibold">
-                    {formatCurrency(client.totalValue)}
-                  </td>
-                  <td className="p-4 text-muted-foreground">
-                    {new Date(client.created_at).toLocaleDateString()}
-                  </td>
+                  <td className="p-4 text-right font-semibold">{formatCurrency(client.totalValue)}</td>
+                  <td className="p-4 text-muted-foreground">{new Date(client.created_at).toLocaleDateString()}</td>
                   <td className="p-4 text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleManageHoldings(client)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => handleManageHoldings(client)}>
                       <Eye className="h-4 w-4 mr-2" />
                       Manage Holdings
                     </Button>
@@ -199,7 +155,7 @@ export const ClientManagement = () => {
       <AdminHoldingsDialog
         open={holdingsDialogOpen}
         onOpenChange={handleDialogClose}
-        client={selectedClient}
+        client={selectedClient ? { id: selectedClient.id, email: selectedClient.email, name: selectedClient.name } : null}
       />
     </div>
   );

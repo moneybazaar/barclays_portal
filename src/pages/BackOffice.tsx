@@ -1,24 +1,44 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, DollarSign, TicketIcon, TrendingUp, Shield, UserRoundCog } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Shield, UserRoundCog, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleManagement } from "@/components/RoleManagement";
 import { ClientManagement } from "@/components/ClientManagement";
+import { supabase } from "@/integrations/supabase/client";
 
-const mockStats = {
-  totalClients: 847,
-  aum: 12450000000,
-  activeTickets: 23,
-  avgResolutionTime: "4.2 hours",
-};
+interface DashboardStats {
+  totalClients: number;
+  totalAum: number;
+  totalPositions: number;
+}
 
 export default function BackOffice() {
   const { userRole, loading } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const sessionToken = localStorage.getItem("barclays_session_token");
+      if (!sessionToken) return;
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-clients", {
+          body: { session_token: sessionToken, action: "get-stats" },
+        });
+        if (!error && !data?.error) {
+          setStats(data);
+        }
+      } catch { /* ignore */ }
+      setStatsLoading(false);
+    };
+    if (userRole === "admin") fetchStats();
+  }, [userRole]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -36,6 +56,13 @@ export default function BackOffice() {
     );
   }
 
+  const formatAum = (value: number) => {
+    if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+    if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+    return `$${value.toFixed(0)}`;
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -44,8 +71,6 @@ export default function BackOffice() {
         <Tabs defaultValue="overview" className="w-full">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="investments">Investments</TabsTrigger>
-            <TabsTrigger value="support">Support Analytics</TabsTrigger>
             <TabsTrigger value="clients" className="flex items-center gap-1">
               <UserRoundCog className="h-4 w-4" />
               Clients
@@ -57,15 +82,18 @@ export default function BackOffice() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockStats.totalClients}</div>
-                  <p className="text-xs text-muted-foreground">+12% from last month</p>
+                  {statsLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <div className="text-2xl font-bold">{stats?.totalClients ?? 0}</div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -75,69 +103,25 @@ export default function BackOffice() {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${(mockStats.aum / 1000000000).toFixed(2)}B</div>
-                  <p className="text-xs text-muted-foreground">+8.5% from last month</p>
+                  {statsLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <div className="text-2xl font-bold">{formatAum(stats?.totalAum ?? 0)}</div>
+                  )}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Active Tickets</CardTitle>
-                  <TicketIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{mockStats.activeTickets}</div>
-                  <p className="text-xs text-muted-foreground">-3 from yesterday</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Avg Resolution Time</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Positions</CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{mockStats.avgResolutionTime}</div>
-                  <p className="text-xs text-muted-foreground">-15% improvement</p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="investments" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Asset Class Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground">Asset allocation donut chart (cached in localStorage)</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="support" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ticket Status Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 flex items-center justify-center bg-muted/50 rounded-lg">
-                    <p className="text-muted-foreground">Ticket status pie chart</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resolution Time Trend</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 flex items-center justify-center bg-muted/50 rounded-lg">
-                    <p className="text-muted-foreground">Resolution time line chart</p>
-                  </div>
+                  {statsLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <div className="text-2xl font-bold">{stats?.totalPositions ?? 0}</div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -159,7 +143,7 @@ export default function BackOffice() {
             <Card>
               <CardHeader>
                 <CardTitle>Role Management</CardTitle>
-                <p className="text-sm text-muted-foreground">Assign and revoke user roles</p>
+                <p className="text-sm text-muted-foreground">Assign and manage user roles</p>
               </CardHeader>
               <CardContent>
                 <RoleManagement />
