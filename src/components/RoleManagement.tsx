@@ -1,119 +1,70 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Shield, Loader2 } from "lucide-react";
+import { Shield, Loader2 } from "lucide-react";
 
-type AppRole = "admin" | "moderator" | "user";
-
-interface UserWithRoles {
+interface UserWithRole {
   id: string;
   email: string;
-  full_name: string | null;
-  roles: AppRole[];
+  name: string | null;
+  role: string;
 }
 
 export function RoleManagement() {
   const { toast } = useToast();
-  const [users, setUsers] = useState<UserWithRoles[]>([]);
+  const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRole, setSelectedRole] = useState<Record<string, AppRole>>({});
+  const [selectedRole, setSelectedRole] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const fetchUsersWithRoles = async () => {
+  const getSessionToken = () => localStorage.getItem("barclays_session_token");
+
+  const fetchUsers = async () => {
     setLoading(true);
-    
-    // Fetch profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("id, email, full_name");
-    
-    if (profilesError) {
-      toast({ title: "Error fetching users", variant: "destructive" });
-      setLoading(false);
-      return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-clients", {
+        body: { session_token: getSessionToken(), action: "list-clients" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setUsers((data.clients || []).map((c: any) => ({
+        id: c.id,
+        email: c.email,
+        name: c.name,
+        role: c.role,
+      })));
+    } catch (err: any) {
+      toast({ title: "Error fetching users", description: err.message, variant: "destructive" });
     }
-
-    // Fetch all roles
-    const { data: roles, error: rolesError } = await supabase
-      .from("user_roles")
-      .select("user_id, role");
-
-    if (rolesError) {
-      toast({ title: "Error fetching roles", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
-    // Map roles to users
-    const usersWithRoles = profiles?.map(profile => ({
-      ...profile,
-      roles: roles
-        ?.filter(r => r.user_id === profile.id)
-        .map(r => r.role as AppRole) || []
-    })) || [];
-
-    setUsers(usersWithRoles);
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchUsersWithRoles();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
-  const assignRole = async (userId: string) => {
-    const role = selectedRole[userId];
-    if (!role) return;
-
-    setActionLoading(`assign-${userId}`);
-    
-    const { error } = await supabase
-      .from("user_roles")
-      .insert({ user_id: userId, role });
-
-    if (error) {
-      if (error.code === "23505") {
-        toast({ title: "User already has this role", variant: "destructive" });
-      } else {
-        toast({ title: "Error assigning role", variant: "destructive" });
-      }
-    } else {
-      toast({ title: "Role assigned successfully" });
-      fetchUsersWithRoles();
+  const updateRole = async (userId: string, role: string) => {
+    setActionLoading(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-clients", {
+        body: { session_token: getSessionToken(), action: "update-role", user_id: userId, role },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: `Role updated to ${role}` });
+      fetchUsers();
+    } catch (err: any) {
+      toast({ title: "Error updating role", description: err.message, variant: "destructive" });
     }
-    
-    setSelectedRole(prev => ({ ...prev, [userId]: undefined as any }));
+    setSelectedRole((prev) => ({ ...prev, [userId]: "" }));
     setActionLoading(null);
   };
 
-  const revokeRole = async (userId: string, role: AppRole) => {
-    setActionLoading(`revoke-${userId}-${role}`);
-    
-    const { error } = await supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", userId)
-      .eq("role", role);
-
-    if (error) {
-      toast({ title: "Error revoking role", variant: "destructive" });
-    } else {
-      toast({ title: "Role revoked successfully" });
-      fetchUsersWithRoles();
-    }
-    
-    setActionLoading(null);
-  };
-
-  const getRoleBadgeVariant = (role: AppRole) => {
-    switch (role) {
-      case "admin": return "destructive";
-      case "moderator": return "default";
-      case "user": return "secondary";
-    }
+  const getRoleBadgeVariant = (role: string) => {
+    if (role === "admin") return "destructive" as const;
+    return "secondary" as const;
   };
 
   if (loading) {
@@ -133,70 +84,45 @@ export function RoleManagement() {
           </CardContent>
         </Card>
       ) : (
-        users.map(user => (
+        users.map((user) => (
           <Card key={user.id}>
-            <CardHeader className="pb-3">
+            <CardContent className="pt-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">{user.full_name || "No name"}</CardTitle>
+                  <p className="font-medium">{user.name || "No name"}</p>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
-                <Shield className="h-5 w-5 text-muted-foreground" />
+                <div className="flex items-center gap-2">
+                  <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
+                    {user.role}
+                  </Badge>
+                  <Shield className="h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {user.roles.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">No roles assigned</span>
-                ) : (
-                  user.roles.map(role => (
-                    <Badge 
-                      key={role} 
-                      variant={getRoleBadgeVariant(role)}
-                      className="flex items-center gap-1"
-                    >
-                      {role}
-                      <button
-                        onClick={() => revokeRole(user.id, role)}
-                        disabled={actionLoading === `revoke-${user.id}-${role}`}
-                        className="ml-1 hover:bg-background/20 rounded p-0.5"
-                      >
-                        {actionLoading === `revoke-${user.id}-${role}` ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3 w-3" />
-                        )}
-                      </button>
-                    </Badge>
-                  ))
-                )}
-              </div>
-              
+
               <div className="flex items-center gap-2">
                 <Select
                   value={selectedRole[user.id] || ""}
-                  onValueChange={(value) => setSelectedRole(prev => ({ ...prev, [user.id]: value as AppRole }))}
+                  onValueChange={(value) => setSelectedRole((prev) => ({ ...prev, [user.id]: value }))}
                 >
                   <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Select role" />
+                    <SelectValue placeholder="Change role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="moderator">Moderator</SelectItem>
-                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="client">Client</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
                   size="sm"
-                  onClick={() => assignRole(user.id)}
-                  disabled={!selectedRole[user.id] || actionLoading === `assign-${user.id}`}
+                  onClick={() => updateRole(user.id, selectedRole[user.id])}
+                  disabled={!selectedRole[user.id] || actionLoading === user.id}
                 >
-                  {actionLoading === `assign-${user.id}` ? (
+                  {actionLoading === user.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Plus className="h-4 w-4 mr-1" />
+                    "Update"
                   )}
-                  Assign
                 </Button>
               </div>
             </CardContent>

@@ -1,67 +1,116 @@
 
 
-## Fix Admin Panel Architecture
+## Plan: Enable Login Flow and Minimal Operations
 
-The admin panel currently queries `profiles` and `user_roles` tables (Supabase Auth), but the app uses custom auth tables (`app_users`, `app_user_roles`, `app_sessions`). This makes the entire admin panel non-functional. Here is the plan to fix it.
+### Current State
 
-### 1. Create Edge Function: `admin-clients`
+- **Database is empty**: No `app_users`, no `app_sessions`, no `holdings` data
+- **No `role` column** on `app_users` table - `useAuth` hardcodes everyone as `"client"`
+- **Auth depends on external portal** (`application.barclays-ib.app`) which verifies codes and creates sessions
+- **Holdings use Supabase Auth RLS** (`auth.uid()`) but login creates `app_users` records, not Supabase Auth users - so holdings queries will always fail
+- **Market data fallback shows $0.00** when Finnhub API fails
+- **2FA toggle in Settings** does nothing - just local state
+- **Dashboard links to `/research`** which was removed from navigation
+- **Settings page** uses hardcoded mock data instead of the logged-in user's info
 
-A single admin edge function handling client and role management:
+### What Needs to Happen
 
-- **Validates session** via `app_sessions` table
-- **Verifies admin role** via `app_user_roles`
-- **Actions supported:**
-  - `list-clients` — Query `app_users` LEFT JOIN `app_user_roles`, plus aggregate holdings stats (count, total value)
-  - `update-role` — Insert/update/delete in `app_user_roles` for a given user
-  - `get-stats` — Return real counts: total clients (`app_users`), total AUM (`SUM` from `holdings`), total positions (`COUNT` from `holdings`)
+#### 1. Add `role` column to `app_users`
 
-All actions return 403 if caller is not admin.
+Add a `role` column (default `'client'`) so the auth-callback can set roles and `useAuth` can read them.
 
-### 2. Refactor `ClientManagement.tsx`
+**Database migration:**
+```sql
+ALTER TABLE app_users ADD COLUMN role VARCHAR DEFAULT 'client';
+```
 
-- Remove `supabase.from("profiles")` and `supabase.from("holdings")` direct queries
-- Call `admin-clients` edge function with `action: "list-clients"` and `session_token`
-- Update the `ClientProfile` interface: `full_name` becomes `name` (matching `app_users` schema)
-- Pass updated interface shape to `AdminHoldingsDialog`
+#### 2. Seed test accounts
 
-### 3. Refactor `RoleManagement.tsx`
+Insert the two test users directly into the database:
 
-- Remove `supabase.from("profiles")` and `supabase.from("user_roles")` direct queries
-- Use `admin-clients` with `action: "list-clients"` to get users with roles
-- Use `admin-clients` with `action: "update-role"` to assign/revoke roles
-- Update types to use `app_user_roles` role values (`admin`, `client`) instead of `app_role` enum (`admin`, `moderator`, `user`)
+- `client@yopmail.com` as role `client`
+- `admin@yopmail.com` as role `admin`
 
-### 4. Refactor `AdminHoldingsDialog.tsx`
+Create active sessions for both so they can log in immediately without needing the external portal.
 
-- Remove all `supabase.from("holdings")` direct queries
-- Use existing `manage-holdings` edge function (already supports admin operations):
-  - `action: "list"` with admin token returns all holdings; filter by `user_id` client-side, or add a `user_id` filter param
-  - `action: "add"` with `holding.user_id` for adding to specific client
-  - `action: "update"` and `action: "delete"` already work for admins
-- Update `ClientProfile` interface to match `app_users` shape (`name` instead of `full_name`)
+#### 3. Update `useAuth.tsx` to support direct session login
 
-### 5. Fix `BackOffice.tsx` Dashboard Stats
+- Read `role` from `app_users` instead of hardcoding `"client"`
+- Also check `localStorage` for user data stored during session creation
+- This allows the seeded sessions to work
 
-- Replace hardcoded stats (`847 clients`, `$12.45B AUM`, `23 tickets`)
-- Fetch real stats from `admin-clients` edge function (`action: "get-stats"`) on mount
-- Display actual client count, AUM, and holdings count
+#### 4. Update `auth-callback` edge function
 
-### 6. Update `manage-holdings` Edge Function
+- Set the `role` field when upserting users (default to `'client'`, or read from portal response)
 
-- Add support for `action: "list"` with optional `user_id` parameter so admins can fetch holdings for a specific client (currently returns ALL holdings for admins, which works but is inefficient)
+#### 5. Fix market data fallback
 
-### 7. Config
+Update `supabase/functions/market-data/index.ts` to return realistic static prices instead of zeros when Finnhub fails:
+- S&P 500: ~$520
+- FTSE 100: ~$35
+- EUR/USD: ~$105
+- Gold: ~$215
 
-- Add `admin-clients` to `supabase/config.toml` with `verify_jwt = false`
+#### 6. Remove 2FA from Settings
 
-### Files Created
-- `supabase/functions/admin-clients/index.ts`
+Since 2FA is not functional (it's just a local toggle), remove the entire Security card from Settings as requested.
 
-### Files Modified
-- `src/components/ClientManagement.tsx`
-- `src/components/RoleManagement.tsx`
-- `src/components/AdminHoldingsDialog.tsx`
-- `src/pages/BackOffice.tsx`
-- `supabase/functions/manage-holdings/index.ts`
-- `supabase/config.toml`
+#### 7. Fix Dashboard `/research` link
+
+Change the "View Details" link on Dashboard positions table from `/research` to `/investments`.
+
+#### 8. Remove `/research` route from App.tsx
+
+Clean up the dead route since Research Portal was removed.
+
+#### 9. Fix Settings to use logged-in user data
+
+Update Settings page to read user info from `useAuth` instead of hardcoded "John Smith" data.
+
+#### 10. Fix holdings RLS policies
+
+The holdings table uses `auth.uid()` for RLS, but the custom auth system creates `app_users` records (not Supabase Auth users). This means holdings will never load. Options:
+- Update RLS policies to work with the custom `app_sessions` token system (matching `app_users` to `app_sessions`)
+- Or seed holdings using the service role for demo purposes
+
+The plan will update the RLS policies on `holdings` to use the custom session token pattern (same as `app_users` and `app_sessions` tables), so holdings actually work for logged-in users.
+
+---
+
+### Technical Details
+
+**Files to modify:**
+
+| File | Change |
+|------|--------|
+| `src/hooks/useAuth.tsx` | Read `role` from `app_users` data; support localStorage fallback |
+| `src/pages/Settings.tsx` | Remove 2FA section; load user data from `useAuth` |
+| `src/pages/Dashboard.tsx` | Change `/research` link to `/investments` |
+| `src/App.tsx` | Remove `/research` route import and route |
+| `supabase/functions/auth-callback/index.ts` | Include `role` in upsert |
+| `supabase/functions/market-data/index.ts` | Realistic fallback prices |
+
+**Database changes:**
+
+1. Add `role` column to `app_users`
+2. Insert test users: `client@yopmail.com` (client) and `admin@yopmail.com` (admin) with active sessions
+3. Update `holdings` RLS policies to use the custom session token pattern instead of `auth.uid()`
+4. Seed demo holdings for `client@yopmail.com`
+
+**New edge function:**
+
+Create `seed-test-user` to generate sessions for test accounts, returning tokens that can be stored in localStorage for immediate login.
+
+---
+
+### Implementation Order
+
+1. Database migration: add `role` column, update holdings RLS
+2. Seed test users + sessions + demo holdings
+3. Update `useAuth.tsx` for role support
+4. Update `auth-callback` edge function
+5. Fix market data fallback prices
+6. Remove 2FA from Settings, wire up user data
+7. Remove `/research` route and fix Dashboard link
+8. Deploy edge functions and test both accounts
 

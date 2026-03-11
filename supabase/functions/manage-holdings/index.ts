@@ -40,7 +40,7 @@ serve(async (req) => {
     );
 
     const body = await req.json();
-    const { session_token, action, holding, holding_id } = body;
+    const { session_token, action, holding, holding_id, user_id } = body;
 
     if (!session_token) {
       return new Response(JSON.stringify({ error: "No session token" }), {
@@ -63,6 +63,8 @@ serve(async (req) => {
         let query = supabase.from("holdings").select("*").order("created_at", { ascending: false });
         if (!isAdmin) {
           query = query.eq("user_id", user.id);
+        } else if (user_id) {
+          query = query.eq("user_id", user_id);
         }
         const { data, error } = await query;
         if (error) throw error;
