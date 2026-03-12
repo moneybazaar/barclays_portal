@@ -91,6 +91,10 @@ export default function BackOffice() {
   const [researchFormOpen, setResearchFormOpen] = useState(false);
   const [researchForm, setResearchForm] = useState({ title: "", summary: "", content: "", author: "" });
 
+  // QR
+  const [qrDeposit, setQrDeposit] = useState<DepositRecord | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
+
   // KYC
   const [kycClients, setKycClients] = useState<KycClient[]>([]);
   const [kycLoading, setKycLoading] = useState(false);
