@@ -28,14 +28,14 @@ serve(async (req) => {
     const passwordHash = await hashPassword("12345678");
     const results: any = {};
 
-    // 1. Upsert client user
+    // 1. Upsert client user (with data)
     const { data: clientUser, error: clientErr } = await supabase
       .from("app_users")
       .upsert({
-        email: "client@yopmail.com",
+        email: "clientmock@yopmail.com",
         name: "James Richardson",
         auth_source: "external_auth",
-        external_user_id: "client@yopmail.com",
+        external_user_id: "clientmock@yopmail.com",
         password_hash: passwordHash,
         updated_at: new Date().toISOString(),
       }, { onConflict: "email" })
@@ -44,7 +44,23 @@ serve(async (req) => {
 
     if (clientErr) throw new Error(`Client user error: ${clientErr.message}`);
 
-    // 2. Upsert admin user
+    // 2. Upsert client user (no data)
+    const { data: clientNoData, error: clientNoDataErr } = await supabase
+      .from("app_users")
+      .upsert({
+        email: "clientnodata@yopmail.com",
+        name: "Emily Watson",
+        auth_source: "external_auth",
+        external_user_id: "clientnodata@yopmail.com",
+        password_hash: passwordHash,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "email" })
+      .select()
+      .single();
+
+    if (clientNoDataErr) throw new Error(`Client no-data user error: ${clientNoDataErr.message}`);
+
+    // 3. Upsert admin user
     const { data: adminUser, error: adminErr } = await supabase
       .from("app_users")
       .upsert({
@@ -60,9 +76,13 @@ serve(async (req) => {
 
     if (adminErr) throw new Error(`Admin user error: ${adminErr.message}`);
 
-    // 3. Set roles
+    // 4. Set roles
     await supabase.from("app_user_roles").upsert(
       { user_id: clientUser.id, role: "client" },
+      { onConflict: "user_id,role" }
+    );
+    await supabase.from("app_user_roles").upsert(
+      { user_id: clientNoData.id, role: "client" },
       { onConflict: "user_id,role" }
     );
     await supabase.from("app_user_roles").upsert(
@@ -70,25 +90,31 @@ serve(async (req) => {
       { onConflict: "user_id,role" }
     );
 
-    // 4. Create sessions
+    // 5. Create sessions
     await supabase.from("app_sessions").delete().eq("user_id", clientUser.id);
+    await supabase.from("app_sessions").delete().eq("user_id", clientNoData.id);
     await supabase.from("app_sessions").delete().eq("user_id", adminUser.id);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
     const clientToken = crypto.randomUUID();
+    const clientNoDataToken = crypto.randomUUID();
     const adminToken = crypto.randomUUID();
 
     await supabase.from("app_sessions").insert({
       user_id: clientUser.id, token: clientToken, expires_at: expiresAt.toISOString(),
     });
     await supabase.from("app_sessions").insert({
+      user_id: clientNoData.id, token: clientNoDataToken, expires_at: expiresAt.toISOString(),
+    });
+    await supabase.from("app_sessions").insert({
       user_id: adminUser.id, token: adminToken, expires_at: expiresAt.toISOString(),
     });
 
-    // 5. Seed demo holdings
+    // 6. Seed demo holdings for clientmock only
     await supabase.from("holdings").delete().eq("user_id", clientUser.id);
+    await supabase.from("holdings").delete().eq("user_id", clientNoData.id);
 
     const demoHoldings = [
       { user_id: clientUser.id, asset_type: "stock", name: "Apple Inc.", ticker: "AAPL", shares: 500, purchase_price: 165.00, current_price: 178.45, currency: "USD", risk_level: "medium" },
@@ -108,6 +134,10 @@ serve(async (req) => {
     results.client = {
       user: { id: clientUser.id, email: clientUser.email, name: clientUser.name },
       session_token: clientToken, role: "client",
+    };
+    results.clientNoData = {
+      user: { id: clientNoData.id, email: clientNoData.email, name: clientNoData.name },
+      session_token: clientNoDataToken, role: "client",
     };
     results.admin = {
       user: { id: adminUser.id, email: adminUser.email, name: adminUser.name },
