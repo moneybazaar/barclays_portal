@@ -418,16 +418,21 @@ export default function BackOffice() {
                             </td>
                             <td className="p-3 text-sm">{new Date(dep.created_at).toLocaleDateString()}</td>
                             <td className="p-3 text-right">
-                              {dep.status === "pending" && (
-                                <div className="flex gap-1 justify-end">
-                                  <Button size="sm" variant="outline" onClick={() => handleDepositStatus(dep.id, "received")}>
-                                    <Check className="h-3 w-3 mr-1" />Received
-                                  </Button>
-                                  <Button size="sm" variant="ghost" onClick={() => handleDepositStatus(dep.id, "cancelled")}>
-                                    <XIcon className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              )}
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="ghost" onClick={() => { setQrDeposit(dep); setQrOpen(true); }}>
+                                  <QrCode className="h-3 w-3" />
+                                </Button>
+                                {dep.status === "pending" && (
+                                  <>
+                                    <Button size="sm" variant="outline" onClick={() => handleDepositStatus(dep.id, "received")}>
+                                      <Check className="h-3 w-3 mr-1" />Received
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => handleDepositStatus(dep.id, "cancelled")}>
+                                      <XIcon className="h-3 w-3" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}
