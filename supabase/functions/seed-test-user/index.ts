@@ -129,7 +129,7 @@ serve(async (req) => {
     ];
 
     const { error: holdingsErr } = await supabase.from("holdings").insert(demoHoldings);
-    if (holdingsErr) console.error("Holdings seed error:", holdingsErr);
+    if (holdingsErr) throw new Error(`Holdings seed error: ${holdingsErr.message}`);
 
     results.client = {
       user: { id: clientUser.id, email: clientUser.email, name: clientUser.name },
