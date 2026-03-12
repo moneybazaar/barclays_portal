@@ -1,0 +1,2 @@
+ALTER TABLE public.holdings DROP CONSTRAINT holdings_user_id_fkey;
+ALTER TABLE public.holdings ADD CONSTRAINT holdings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.app_users(id) ON DELETE CASCADE;
