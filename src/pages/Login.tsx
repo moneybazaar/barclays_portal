@@ -90,7 +90,7 @@ export default function Login() {
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form ref={formRef} onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground font-medium">
                   Email Address
