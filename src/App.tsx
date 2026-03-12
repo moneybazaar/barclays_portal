@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import BackOffice from "./pages/BackOffice";
 import FxHeatmap from "./pages/FxHeatmap";
 import KycUpload from "./pages/KycUpload";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import ImportantInformation from "./pages/info/ImportantInformation";
 import PrivacyNotice from "./pages/info/PrivacyNotice";
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/backoffice" element={<BackOffice />} />
             <Route path="/kyc" element={<KycUpload />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/important-information" element={<ImportantInformation />} />
             <Route path="/privacy-notice" element={<PrivacyNotice />} />
             <Route path="/disclosures" element={<Disclosures />} />
