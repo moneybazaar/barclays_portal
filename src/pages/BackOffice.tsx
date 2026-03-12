@@ -442,6 +442,7 @@ export default function BackOffice() {
                 )}
               </CardContent>
             </Card>
+            <PaynowQRDialog open={qrOpen} onOpenChange={setQrOpen} deposit={qrDeposit} />
           </TabsContent>
 
           {/* Documents */}

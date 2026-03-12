@@ -5,7 +5,8 @@ import { DashboardNav } from "@/components/DashboardNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Info, Copy, Loader2 } from "lucide-react";
+import { Info, Copy, Loader2, QrCode } from "lucide-react";
+import { PaynowQRDialog } from "@/components/PaynowQRDialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
