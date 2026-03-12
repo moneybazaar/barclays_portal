@@ -169,7 +169,6 @@ export default function Deposit() {
                       </tr>
                     </thead>
                     <tbody>
-                      {deposits.map(dep => (
                         <tr key={dep.id} className="border-t">
                           <td className="p-3 font-mono text-sm">{dep.reference_code}</td>
                           <td className="p-3 text-right font-semibold">
@@ -178,6 +177,13 @@ export default function Deposit() {
                           <td className="p-3">{getStatusBadge(dep.status)}</td>
                           <td className="p-3 text-sm">{new Date(dep.created_at).toLocaleDateString()}</td>
                           <td className="p-3 text-sm">{dep.received_at ? new Date(dep.received_at).toLocaleDateString() : "—"}</td>
+                          <td className="p-3 text-right">
+                            {(dep.status === "pending" || dep.status === "sent") && (
+                              <Button size="sm" variant="ghost" onClick={() => { setQrDeposit(dep); setQrOpen(true); }}>
+                                <QrCode className="h-4 w-4 mr-1" />QR
+                              </Button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
