@@ -1,14 +1,22 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const SESSION_STORAGE_KEY = "barclays_session_token";
+const TEST_PASSWORD = "M0n3y@12345678";
+
+const TEST_ACCOUNTS = [
+  { email: "clientmock@yopmail.com", label: "Client (James Richardson)" },
+  { email: "clientnodata@yopmail.com", label: "Client No Data (Emily Watson)" },
+  { email: "admin@yopmail.com", label: "Admin (Sarah Mitchell)" },
+];
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,6 +24,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleQuickLogin = (email: string) => {
+    setEmail(email);
+    setPassword(TEST_PASSWORD);
+    setTimeout(() => formRef.current?.requestSubmit(), 50);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +90,7 @@ export default function Login() {
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form ref={formRef} onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground font-medium">
                   Email Address
@@ -125,6 +141,23 @@ export default function Login() {
                 )}
               </Button>
             </form>
+            <div className="mt-4 border border-dashed border-muted-foreground/30 rounded-md p-3">
+              <Label className="text-xs text-muted-foreground font-medium mb-2 block">
+                Quick Login (Testing)
+              </Label>
+              <Select onValueChange={handleQuickLogin}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a test account…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEST_ACCOUNTS.map((a) => (
+                    <SelectItem key={a.email} value={a.email}>
+                      {a.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="mt-6 pt-4 border-t text-center">
               <p className="text-xs text-muted-foreground">
                 Protected by Barclays Investment Bank security protocols.
