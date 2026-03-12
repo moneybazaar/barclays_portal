@@ -17,6 +17,11 @@ import BackOffice from "./pages/BackOffice";
 import FxHeatmap from "./pages/FxHeatmap";
 import KycUpload from "./pages/KycUpload";
 import NotFound from "./pages/NotFound";
+import ImportantInformation from "./pages/info/ImportantInformation";
+import PrivacyNotice from "./pages/info/PrivacyNotice";
+import Disclosures from "./pages/info/Disclosures";
+import Accessibility from "./pages/info/Accessibility";
+import CookiesPolicy from "./pages/info/CookiesPolicy";
 
 const queryClient = new QueryClient();
 
