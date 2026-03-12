@@ -161,14 +161,12 @@ const LandingFooter = () => {
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-white/70">
               {footerLinks.legal.map((link, index) => (
                 <span key={link.label} className="flex items-center gap-4">
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    to={link.href}
                     className="hover:text-white transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                   {index < footerLinks.legal.length - 1 && (
                     <span className="text-white/30">|</span>
                   )}

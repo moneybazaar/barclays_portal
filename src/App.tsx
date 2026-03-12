@@ -71,6 +71,11 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/backoffice" element={<BackOffice />} />
             <Route path="/kyc" element={<KycUpload />} />
+            <Route path="/important-information" element={<ImportantInformation />} />
+            <Route path="/privacy-notice" element={<PrivacyNotice />} />
+            <Route path="/disclosures" element={<Disclosures />} />
+            <Route path="/accessibility" element={<Accessibility />} />
+            <Route path="/cookies-policy" element={<CookiesPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
