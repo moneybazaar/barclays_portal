@@ -176,10 +176,12 @@ export default function Investments() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Button onClick={handleAddNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Holding
-            </Button>
+            {isAdmin && (
+              <Button onClick={handleAddNew}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Holding
+              </Button>
+            )}
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Filter by..." />
