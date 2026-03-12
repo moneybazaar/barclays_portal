@@ -25,6 +25,14 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleQuickLogin = (email: string) => {
+    setEmail(email);
+    setPassword(TEST_PASSWORD);
+    setTimeout(() => formRef.current?.requestSubmit(), 50);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
