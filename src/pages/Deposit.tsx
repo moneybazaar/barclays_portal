@@ -161,39 +161,42 @@ export default function Deposit() {
                   <table className="w-full">
                     <thead className="bg-muted">
                       <tr>
-                        <th className="text-left p-3 font-semibold">Reference</th>
-                        <th className="text-right p-3 font-semibold">Amount</th>
-                        <th className="text-left p-3 font-semibold">Status</th>
-                        <th className="text-left p-3 font-semibold">Date</th>
-                        <th className="text-left p-3 font-semibold">Received</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                        <tr key={dep.id} className="border-t">
-                          <td className="p-3 font-mono text-sm">{dep.reference_code}</td>
-                          <td className="p-3 text-right font-semibold">
-                            {dep.currency === "GBP" ? "£" : "$"}{Number(dep.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="p-3">{getStatusBadge(dep.status)}</td>
-                          <td className="p-3 text-sm">{new Date(dep.created_at).toLocaleDateString()}</td>
-                          <td className="p-3 text-sm">{dep.received_at ? new Date(dep.received_at).toLocaleDateString() : "—"}</td>
-                          <td className="p-3 text-right">
-                            {(dep.status === "pending" || dep.status === "sent") && (
-                              <Button size="sm" variant="ghost" onClick={() => { setQrDeposit(dep); setQrOpen(true); }}>
-                                <QrCode className="h-4 w-4 mr-1" />QR
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
+                         <th className="text-left p-3 font-semibold">Reference</th>
+                         <th className="text-right p-3 font-semibold">Amount</th>
+                         <th className="text-left p-3 font-semibold">Status</th>
+                         <th className="text-left p-3 font-semibold">Date</th>
+                         <th className="text-left p-3 font-semibold">Received</th>
+                         <th className="text-right p-3 font-semibold"></th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {deposits.map(dep => (
+                         <tr key={dep.id} className="border-t">
+                           <td className="p-3 font-mono text-sm">{dep.reference_code}</td>
+                           <td className="p-3 text-right font-semibold">
+                             {dep.currency === "GBP" ? "£" : "$"}{Number(dep.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                           </td>
+                           <td className="p-3">{getStatusBadge(dep.status)}</td>
+                           <td className="p-3 text-sm">{new Date(dep.created_at).toLocaleDateString()}</td>
+                           <td className="p-3 text-sm">{dep.received_at ? new Date(dep.received_at).toLocaleDateString() : "—"}</td>
+                           <td className="p-3 text-right">
+                             {(dep.status === "pending" || dep.status === "sent") && (
+                               <Button size="sm" variant="ghost" onClick={() => { setQrDeposit(dep); setQrOpen(true); }}>
+                                 <QrCode className="h-4 w-4 mr-1" />QR
+                               </Button>
+                             )}
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                 </div>
+               )}
+             </CardContent>
+           </Card>
+           <PaynowQRDialog open={qrOpen} onOpenChange={setQrOpen} deposit={qrDeposit} />
+         </div>
+       </div>
+     </div>
+   );
 }
