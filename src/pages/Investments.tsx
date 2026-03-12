@@ -92,10 +92,12 @@ export default function Investments() {
       return (
         <Card className="p-8 text-center">
           <p className="text-muted-foreground">No {type}s in your portfolio yet.</p>
-          <Button variant="outline" className="mt-4" onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add {type.charAt(0).toUpperCase() + type.slice(1)}
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" className="mt-4" onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add {type.charAt(0).toUpperCase() + type.slice(1)}
+            </Button>
+          )}
         </Card>
       );
     }
