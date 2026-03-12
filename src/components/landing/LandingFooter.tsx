@@ -1,4 +1,5 @@
 import { Linkedin, Instagram, Youtube } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const footerLinks = {
   aboutUs: [
