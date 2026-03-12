@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, DollarSign, TrendingUp, Shield, UserRoundCog, Loader2, Upload, Plus, FileText, BookOpen, StickyNote, Download, Trash2, Check, X as XIcon } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Shield, UserRoundCog, Loader2, Upload, Plus, FileText, BookOpen, StickyNote, Download, Trash2, Check, X as XIcon, QrCode } from "lucide-react";
+import { PaynowQRDialog } from "@/components/PaynowQRDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleManagement } from "@/components/RoleManagement";
 import { ClientManagement } from "@/components/ClientManagement";
@@ -89,6 +90,10 @@ export default function BackOffice() {
   const [researchLoading, setResearchLoading] = useState(false);
   const [researchFormOpen, setResearchFormOpen] = useState(false);
   const [researchForm, setResearchForm] = useState({ title: "", summary: "", content: "", author: "" });
+
+  // QR
+  const [qrDeposit, setQrDeposit] = useState<DepositRecord | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
 
   // KYC
   const [kycClients, setKycClients] = useState<KycClient[]>([]);
@@ -413,16 +418,21 @@ export default function BackOffice() {
                             </td>
                             <td className="p-3 text-sm">{new Date(dep.created_at).toLocaleDateString()}</td>
                             <td className="p-3 text-right">
-                              {dep.status === "pending" && (
-                                <div className="flex gap-1 justify-end">
-                                  <Button size="sm" variant="outline" onClick={() => handleDepositStatus(dep.id, "received")}>
-                                    <Check className="h-3 w-3 mr-1" />Received
-                                  </Button>
-                                  <Button size="sm" variant="ghost" onClick={() => handleDepositStatus(dep.id, "cancelled")}>
-                                    <XIcon className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              )}
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="ghost" onClick={() => { setQrDeposit(dep); setQrOpen(true); }}>
+                                  <QrCode className="h-3 w-3" />
+                                </Button>
+                                {dep.status === "pending" && (
+                                  <>
+                                    <Button size="sm" variant="outline" onClick={() => handleDepositStatus(dep.id, "received")}>
+                                      <Check className="h-3 w-3 mr-1" />Received
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => handleDepositStatus(dep.id, "cancelled")}>
+                                      <XIcon className="h-3 w-3" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -432,6 +442,7 @@ export default function BackOffice() {
                 )}
               </CardContent>
             </Card>
+            <PaynowQRDialog open={qrOpen} onOpenChange={setQrOpen} deposit={qrDeposit} />
           </TabsContent>
 
           {/* Documents */}
