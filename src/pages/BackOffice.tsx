@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, DollarSign, TrendingUp, Shield, UserRoundCog, Loader2, Upload, Plus, FileText, BookOpen, StickyNote, Download, Trash2, Check, X as XIcon } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Shield, UserRoundCog, Loader2, Upload, Plus, FileText, BookOpen, StickyNote, Download, Trash2, Check, X as XIcon, QrCode } from "lucide-react";
+import { PaynowQRDialog } from "@/components/PaynowQRDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleManagement } from "@/components/RoleManagement";
 import { ClientManagement } from "@/components/ClientManagement";
