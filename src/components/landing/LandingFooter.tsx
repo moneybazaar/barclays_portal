@@ -1,4 +1,5 @@
 import { Linkedin, Instagram, Youtube } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const footerLinks = {
   aboutUs: [
@@ -25,11 +26,11 @@ const footerLinks = {
     { label: 'Wealth Management', href: 'https://www.barclays.co.uk/wealth-management/' },
   ],
   legal: [
-    { label: 'Important information', href: 'https://www.ib.barclays/important-information.html' },
-    { label: 'Privacy Notice', href: 'https://www.ib.barclays/privacy-and-cookie-policy.html' },
-    { label: 'Disclosures', href: 'https://www.ib.barclays/disclosures.html' },
-    { label: 'Accessibility', href: 'https://www.ib.barclays/accessibility.html' },
-    { label: 'Cookies policy', href: 'https://www.ib.barclays/privacy-and-cookie-policy.html' },
+    { label: 'Important information', href: '/important-information' },
+    { label: 'Privacy Notice', href: '/privacy-notice' },
+    { label: 'Disclosures', href: '/disclosures' },
+    { label: 'Accessibility', href: '/accessibility' },
+    { label: 'Cookies policy', href: '/cookies-policy' },
   ],
 };
 
@@ -160,14 +161,12 @@ const LandingFooter = () => {
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-white/70">
               {footerLinks.legal.map((link, index) => (
                 <span key={link.label} className="flex items-center gap-4">
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    to={link.href}
                     className="hover:text-white transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                   {index < footerLinks.legal.length - 1 && (
                     <span className="text-white/30">|</span>
                   )}
