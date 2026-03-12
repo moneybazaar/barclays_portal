@@ -32,6 +32,8 @@ export default function Deposit() {
   const { user, loading, username, userRole, signOut } = useAuth();
   const [deposits, setDeposits] = useState<DepositRecord[]>([]);
   const [depositsLoading, setDepositsLoading] = useState(true);
+  const [qrDeposit, setQrDeposit] = useState<DepositRecord | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
 
   const getToken = () => localStorage.getItem("barclays_session_token");
 
