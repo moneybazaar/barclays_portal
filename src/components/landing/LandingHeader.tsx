@@ -108,8 +108,8 @@ const LandingHeader = () => {
                 alt="Barclays" 
                 className="hidden sm:block h-10 md:h-12 w-auto object-contain"
               />
-              <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
-              <span className="text-primary font-semibold text-sm sm:text-base hidden sm:block">
+              <div className="h-8 w-px bg-primary/30 mx-2 hidden sm:block" />
+              <span className="text-primary font-semibold text-sm sm:text-base hidden sm:block tracking-wide">
                 Investment Bank
               </span>
             </Link>
