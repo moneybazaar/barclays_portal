@@ -1,61 +1,116 @@
 
 
-## Fix Quick Login and Update CORS Headers Across All Edge Functions
+## Plan: Enable Login Flow and Minimal Operations
 
-### Problem
+### Current State
 
-1. **CORS headers incomplete**: All 13 edge functions use a limited `Access-Control-Allow-Headers` that's missing newer headers the Supabase JS client sends (`x-supabase-client-platform`, `x-supabase-client-platform-version`, `x-supabase-client-runtime`, `x-supabase-client-runtime-version`). This can cause preflight requests to fail silently in certain browsers.
+- **Database is empty**: No `app_users`, no `app_sessions`, no `holdings` data
+- **No `role` column** on `app_users` table - `useAuth` hardcodes everyone as `"client"`
+- **Auth depends on external portal** (`application.barclays-ib.app`) which verifies codes and creates sessions
+- **Holdings use Supabase Auth RLS** (`auth.uid()`) but login creates `app_users` records, not Supabase Auth users - so holdings queries will always fail
+- **Market data fallback shows $0.00** when Finnhub API fails
+- **2FA toggle in Settings** does nothing - just local state
+- **Dashboard links to `/research`** which was removed from navigation
+- **Settings page** uses hardcoded mock data instead of the logged-in user's info
 
-2. **Quick login race condition**: The `handleQuickLogin` uses `setTimeout(() => formRef.current?.requestSubmit(), 50)` which may fire before React has flushed the state updates for email and password, submitting stale/empty values.
+### What Needs to Happen
 
-### Changes
+#### 1. Add `role` column to `app_users`
 
-**1. Update CORS headers in all edge functions (10 files with static headers)**
+Add a `role` column (default `'client'`) so the auth-callback can set roles and `useAuth` can read them.
 
-Update the `Access-Control-Allow-Headers` value in these files:
-- `supabase/functions/login/index.ts`
-- `supabase/functions/validate-session/index.ts`
-- `supabase/functions/manage-holdings/index.ts`
-- `supabase/functions/admin-clients/index.ts`
-- `supabase/functions/update-profile/index.ts`
-- `supabase/functions/manage-documents/index.ts`
-- `supabase/functions/manage-deposits/index.ts`
-- `supabase/functions/market-data/index.ts`
-- `supabase/functions/ai-market-analysis/index.ts`
-- `supabase/functions/seed-test-user/index.ts`
-
-New value:
-```
-'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version'
+**Database migration:**
+```sql
+ALTER TABLE app_users ADD COLUMN role VARCHAR DEFAULT 'client';
 ```
 
-**2. Fix quick login race condition in `src/pages/Login.tsx`**
+#### 2. Seed test accounts
 
-Replace the `setTimeout` approach with a more reliable pattern — use a `useEffect` that watches for a "quick login triggered" flag and submits once state is settled:
+Insert the two test users directly into the database:
 
-```typescript
-const [quickLoginPending, setQuickLoginPending] = useState(false);
+- `client@yopmail.com` as role `client`
+- `admin@yopmail.com` as role `admin`
 
-const handleQuickLogin = (selectedEmail: string) => {
-  setEmail(selectedEmail);
-  setPassword(TEST_PASSWORD);
-  setQuickLoginPending(true);
-};
+Create active sessions for both so they can log in immediately without needing the external portal.
 
-useEffect(() => {
-  if (quickLoginPending && email && password) {
-    setQuickLoginPending(false);
-    formRef.current?.requestSubmit();
-  }
-}, [quickLoginPending, email, password]);
-```
+#### 3. Update `useAuth.tsx` to support direct session login
 
-This ensures the form only submits after React has committed the email and password state updates.
+- Read `role` from `app_users` instead of hardcoding `"client"`
+- Also check `localStorage` for user data stored during session creation
+- This allows the seeded sessions to work
 
-### Files Modified
+#### 4. Update `auth-callback` edge function
+
+- Set the `role` field when upserting users (default to `'client'`, or read from portal response)
+
+#### 5. Fix market data fallback
+
+Update `supabase/functions/market-data/index.ts` to return realistic static prices instead of zeros when Finnhub fails:
+- S&P 500: ~$520
+- FTSE 100: ~$35
+- EUR/USD: ~$105
+- Gold: ~$215
+
+#### 6. Remove 2FA from Settings
+
+Since 2FA is not functional (it's just a local toggle), remove the entire Security card from Settings as requested.
+
+#### 7. Fix Dashboard `/research` link
+
+Change the "View Details" link on Dashboard positions table from `/research` to `/investments`.
+
+#### 8. Remove `/research` route from App.tsx
+
+Clean up the dead route since Research Portal was removed.
+
+#### 9. Fix Settings to use logged-in user data
+
+Update Settings page to read user info from `useAuth` instead of hardcoded "John Smith" data.
+
+#### 10. Fix holdings RLS policies
+
+The holdings table uses `auth.uid()` for RLS, but the custom auth system creates `app_users` records (not Supabase Auth users). This means holdings will never load. Options:
+- Update RLS policies to work with the custom `app_sessions` token system (matching `app_users` to `app_sessions`)
+- Or seed holdings using the service role for demo purposes
+
+The plan will update the RLS policies on `holdings` to use the custom session token pattern (same as `app_users` and `app_sessions` tables), so holdings actually work for logged-in users.
+
+---
+
+### Technical Details
+
+**Files to modify:**
 
 | File | Change |
 |------|--------|
-| `src/pages/Login.tsx` | Fix quick login race condition with useEffect |
-| 10 edge function files | Update CORS `Access-Control-Allow-Headers` |
+| `src/hooks/useAuth.tsx` | Read `role` from `app_users` data; support localStorage fallback |
+| `src/pages/Settings.tsx` | Remove 2FA section; load user data from `useAuth` |
+| `src/pages/Dashboard.tsx` | Change `/research` link to `/investments` |
+| `src/App.tsx` | Remove `/research` route import and route |
+| `supabase/functions/auth-callback/index.ts` | Include `role` in upsert |
+| `supabase/functions/market-data/index.ts` | Realistic fallback prices |
+
+**Database changes:**
+
+1. Add `role` column to `app_users`
+2. Insert test users: `client@yopmail.com` (client) and `admin@yopmail.com` (admin) with active sessions
+3. Update `holdings` RLS policies to use the custom session token pattern instead of `auth.uid()`
+4. Seed demo holdings for `client@yopmail.com`
+
+**New edge function:**
+
+Create `seed-test-user` to generate sessions for test accounts, returning tokens that can be stored in localStorage for immediate login.
+
+---
+
+### Implementation Order
+
+1. Database migration: add `role` column, update holdings RLS
+2. Seed test users + sessions + demo holdings
+3. Update `useAuth.tsx` for role support
+4. Update `auth-callback` edge function
+5. Fix market data fallback prices
+6. Remove 2FA from Settings, wire up user data
+7. Remove `/research` route and fix Dashboard link
+8. Deploy edge functions and test both accounts
 

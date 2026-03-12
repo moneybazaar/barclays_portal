@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,20 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const formRef = useRef<HTMLFormElement>(null);
+  const [quickLoginPending, setQuickLoginPending] = useState(false);
 
-  const handleQuickLogin = (email: string) => {
-    setEmail(email);
+  const handleQuickLogin = (selectedEmail: string) => {
+    setEmail(selectedEmail);
     setPassword(TEST_PASSWORD);
-    setTimeout(() => formRef.current?.requestSubmit(), 50);
+    setQuickLoginPending(true);
   };
+
+  useEffect(() => {
+    if (quickLoginPending && email && password) {
+      setQuickLoginPending(false);
+      formRef.current?.requestSubmit();
+    }
+  }, [quickLoginPending, email, password]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
