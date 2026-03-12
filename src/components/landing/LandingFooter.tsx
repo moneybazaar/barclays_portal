@@ -26,11 +26,11 @@ const footerLinks = {
     { label: 'Wealth Management', href: 'https://www.barclays.co.uk/wealth-management/' },
   ],
   legal: [
-    { label: 'Important information', href: 'https://www.ib.barclays/important-information.html' },
-    { label: 'Privacy Notice', href: 'https://www.ib.barclays/privacy-and-cookie-policy.html' },
-    { label: 'Disclosures', href: 'https://www.ib.barclays/disclosures.html' },
-    { label: 'Accessibility', href: 'https://www.ib.barclays/accessibility.html' },
-    { label: 'Cookies policy', href: 'https://www.ib.barclays/privacy-and-cookie-policy.html' },
+    { label: 'Important information', href: '/important-information' },
+    { label: 'Privacy Notice', href: '/privacy-notice' },
+    { label: 'Disclosures', href: '/disclosures' },
+    { label: 'Accessibility', href: '/accessibility' },
+    { label: 'Cookies policy', href: '/cookies-policy' },
   ],
 };
 
