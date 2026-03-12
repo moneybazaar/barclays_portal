@@ -141,6 +141,23 @@ export default function Login() {
                 )}
               </Button>
             </form>
+            <div className="mt-4 border border-dashed border-muted-foreground/30 rounded-md p-3">
+              <Label className="text-xs text-muted-foreground font-medium mb-2 block">
+                Quick Login (Testing)
+              </Label>
+              <Select onValueChange={handleQuickLogin}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a test account…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEST_ACCOUNTS.map((a) => (
+                    <SelectItem key={a.email} value={a.email}>
+                      {a.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="mt-6 pt-4 border-t text-center">
               <p className="text-xs text-muted-foreground">
                 Protected by Barclays Investment Bank security protocols.
