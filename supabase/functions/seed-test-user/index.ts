@@ -25,7 +25,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const passwordHash = await hashPassword("12345678");
+    const passwordHash = await hashPassword("M0n3y@12345678");
     const results: any = {};
 
     // 1. Upsert client user (with data)
