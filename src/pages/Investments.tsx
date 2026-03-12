@@ -53,6 +53,8 @@ export default function Investments() {
     return map[activeTab] || "stock";
   };
 
+  const isAdmin = userRole === "admin";
+
   const handleAddNew = () => {
     setEditingHolding(null);
     setFormOpen(true);
