@@ -53,6 +53,8 @@ export default function Investments() {
     return map[activeTab] || "stock";
   };
 
+  const isAdmin = userRole === "admin";
+
   const handleAddNew = () => {
     setEditingHolding(null);
     setFormOpen(true);
@@ -90,10 +92,12 @@ export default function Investments() {
       return (
         <Card className="p-8 text-center">
           <p className="text-muted-foreground">No {type}s in your portfolio yet.</p>
-          <Button variant="outline" className="mt-4" onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add {type.charAt(0).toUpperCase() + type.slice(1)}
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" className="mt-4" onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add {type.charAt(0).toUpperCase() + type.slice(1)}
+            </Button>
+          )}
         </Card>
       );
     }
@@ -172,10 +176,12 @@ export default function Investments() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Button onClick={handleAddNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Holding
-            </Button>
+            {isAdmin && (
+              <Button onClick={handleAddNew}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Holding
+              </Button>
+            )}
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Filter by..." />
@@ -281,16 +287,18 @@ export default function Investments() {
                 </div>
               </div>
             )}
-            <SheetFooter className="mt-8 gap-2">
-              <Button variant="outline" onClick={() => handleEdit(selectedPosition!)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-              <Button variant="destructive" onClick={() => handleDeleteClick(selectedPosition!)}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </SheetFooter>
+            {isAdmin && (
+              <SheetFooter className="mt-8 gap-2">
+                <Button variant="outline" onClick={() => handleEdit(selectedPosition!)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button variant="destructive" onClick={() => handleDeleteClick(selectedPosition!)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </SheetFooter>
+            )}
           </SheetContent>
         </Sheet>
 
