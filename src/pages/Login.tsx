@@ -1,14 +1,22 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const SESSION_STORAGE_KEY = "barclays_session_token";
+const TEST_PASSWORD = "M0n3y@12345678";
+
+const TEST_ACCOUNTS = [
+  { email: "clientmock@yopmail.com", label: "Client (James Richardson)" },
+  { email: "clientnodata@yopmail.com", label: "Client No Data (Emily Watson)" },
+  { email: "admin@yopmail.com", label: "Admin (Sarah Mitchell)" },
+];
 
 export default function Login() {
   const navigate = useNavigate();
