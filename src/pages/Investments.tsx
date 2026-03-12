@@ -287,16 +287,18 @@ export default function Investments() {
                 </div>
               </div>
             )}
-            <SheetFooter className="mt-8 gap-2">
-              <Button variant="outline" onClick={() => handleEdit(selectedPosition!)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-              <Button variant="destructive" onClick={() => handleDeleteClick(selectedPosition!)}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </SheetFooter>
+            {isAdmin && (
+              <SheetFooter className="mt-8 gap-2">
+                <Button variant="outline" onClick={() => handleEdit(selectedPosition!)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button variant="destructive" onClick={() => handleDeleteClick(selectedPosition!)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </SheetFooter>
+            )}
           </SheetContent>
         </Sheet>
 
