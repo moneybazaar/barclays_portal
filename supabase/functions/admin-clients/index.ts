@@ -393,6 +393,18 @@ serve(async (req) => {
         });
       }
 
+      case "list-invitations": {
+        const { data: invites, error: invErr } = await supabase
+          .from("pending_invitations")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (invErr) throw invErr;
+        return new Response(JSON.stringify({ invitations: invites || [] }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

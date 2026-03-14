@@ -815,6 +815,27 @@ export default function BackOffice() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Send Invite Dialog */}
+      <Dialog open={inviteFormOpen} onOpenChange={setInviteFormOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Send Client Invitation</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Email Address</Label>
+              <Input type="email" value={inviteForm.email} onChange={(e) => setInviteForm(p => ({ ...p, email: e.target.value }))} placeholder="client@example.com" />
+            </div>
+            <div>
+              <Label>Full Name (optional)</Label>
+              <Input value={inviteForm.name} onChange={(e) => setInviteForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" />
+            </div>
+            <Button onClick={handleSendInvite} className="w-full" disabled={!inviteForm.email || inviteSending}>
+              {inviteSending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Send Invitation
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
