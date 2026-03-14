@@ -423,7 +423,67 @@ export default function BackOffice() {
             </Card>
           </TabsContent>
 
-          {/* Roles */}
+          {/* Invitations */}
+          <TabsContent value="invitations" className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Client Invitations</CardTitle>
+                  <p className="text-sm text-muted-foreground">Send invite links and track onboarding status</p>
+                </div>
+                <Button onClick={() => setInviteFormOpen(true)}><Mail className="h-4 w-4 mr-2" />Send Invite</Button>
+              </CardHeader>
+              <CardContent>
+                {invitationsLoading ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                ) : invitations.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">No invitations sent yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="text-left p-3 font-semibold">Email</th>
+                          <th className="text-left p-3 font-semibold">Name</th>
+                          <th className="text-left p-3 font-semibold">Code</th>
+                          <th className="text-left p-3 font-semibold">Status</th>
+                          <th className="text-left p-3 font-semibold">Sent</th>
+                          <th className="text-right p-3 font-semibold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invitations.map(inv => (
+                          <tr key={inv.code} className="border-t">
+                            <td className="p-3 text-sm">{inv.user_email}</td>
+                            <td className="p-3 text-sm">{inv.user_name || "—"}</td>
+                            <td className="p-3 font-mono text-sm">{inv.code}</td>
+                            <td className="p-3">
+                              <Badge variant={
+                                inv.status === "used" ? "default" :
+                                new Date(inv.expires_at) < new Date() ? "destructive" : "secondary"
+                              } className="capitalize">
+                                {inv.status === "used" ? "Used" :
+                                 new Date(inv.expires_at) < new Date() ? "Expired" : inv.status || "Pending"}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-sm">{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : "—"}</td>
+                            <td className="p-3 text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="ghost" onClick={() => copyInviteLink(inv.salt)} title="Copy invite link">
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="roles" className="space-y-6">
             <Card>
               <CardHeader>
