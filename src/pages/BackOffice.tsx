@@ -376,10 +376,12 @@ export default function BackOffice() {
           if (v === "documents") fetchDocuments();
           if (v === "research") fetchResearch();
           if (v === "kyc") fetchKycClients();
+          if (v === "invitations") fetchInvitations();
         }}>
           <TabsList className="flex-wrap">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="clients"><UserRoundCog className="h-4 w-4 mr-1" />Clients</TabsTrigger>
+            <TabsTrigger value="invitations"><Mail className="h-4 w-4 mr-1" />Invitations</TabsTrigger>
             <TabsTrigger value="roles"><Shield className="h-4 w-4 mr-1" />Roles</TabsTrigger>
             <TabsTrigger value="deposits"><DollarSign className="h-4 w-4 mr-1" />Deposits</TabsTrigger>
             <TabsTrigger value="documents"><FileText className="h-4 w-4 mr-1" />Documents</TabsTrigger>
