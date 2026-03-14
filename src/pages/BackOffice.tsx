@@ -180,6 +180,41 @@ export default function BackOffice() {
     setKycLoading(false);
   };
 
+  // Fetch invitations
+  const fetchInvitations = async () => {
+    setInvitationsLoading(true);
+    const { data } = await supabase.functions.invoke("admin-clients", {
+      body: { session_token: getToken(), action: "list-invitations" },
+    });
+    setInvitations(data?.invitations || []);
+    setInvitationsLoading(false);
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteForm.email) return;
+    setInviteSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("invite-client", {
+        body: { session_token: getToken(), email: inviteForm.email, name: inviteForm.name },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: "Invitation sent", description: `Invite link created for ${inviteForm.email}` });
+      setInviteFormOpen(false);
+      setInviteForm({ email: "", name: "" });
+      fetchInvitations();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setInviteSending(false);
+  };
+
+  const copyInviteLink = (salt: string) => {
+    const link = `${window.location.origin}/apply/${salt}`;
+    navigator.clipboard.writeText(link);
+    toast({ title: "Link copied to clipboard" });
+  };
+
   const handleKycAction = async (userId: string, status: string) => {
     try {
       const { data, error } = await supabase.functions.invoke("admin-clients", {
