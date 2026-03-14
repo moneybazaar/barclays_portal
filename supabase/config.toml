@@ -38,3 +38,12 @@ verify_jwt = false
 
 [functions.login]
 verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.invite-client]
+verify_jwt = false
+
+[functions.register-client]
+verify_jwt = false

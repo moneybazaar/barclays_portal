@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, DollarSign, TrendingUp, Shield, UserRoundCog, Loader2, Upload, Plus, FileText, BookOpen, StickyNote, Download, Trash2, Check, X as XIcon, QrCode } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Shield, UserRoundCog, Loader2, Upload, Plus, FileText, BookOpen, StickyNote, Download, Trash2, Check, X as XIcon, QrCode, Mail, Copy, RefreshCw } from "lucide-react";
 import { PaynowQRDialog } from "@/components/PaynowQRDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { RoleManagement } from "@/components/RoleManagement";
@@ -67,6 +67,17 @@ interface KycClient {
   kyc_documents: { id: string; title: string; doc_type: string; created_at: string; file_path: string | null }[];
 }
 
+interface Invitation {
+  code: string;
+  salt: string;
+  user_email: string;
+  user_name: string | null;
+  status: string | null;
+  created_at: string | null;
+  expires_at: string;
+  used_at: string | null;
+}
+
 export default function BackOffice() {
   const { userRole, loading, user, username, signOut } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -98,6 +109,13 @@ export default function BackOffice() {
   // KYC
   const [kycClients, setKycClients] = useState<KycClient[]>([]);
   const [kycLoading, setKycLoading] = useState(false);
+
+  // Invitations
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [inviteFormOpen, setInviteFormOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: "", name: "" });
+  const [inviteSending, setInviteSending] = useState(false);
 
   const getToken = () => localStorage.getItem("barclays_session_token");
 
@@ -160,6 +178,41 @@ export default function BackOffice() {
     });
     setKycClients(data?.clients || []);
     setKycLoading(false);
+  };
+
+  // Fetch invitations
+  const fetchInvitations = async () => {
+    setInvitationsLoading(true);
+    const { data } = await supabase.functions.invoke("admin-clients", {
+      body: { session_token: getToken(), action: "list-invitations" },
+    });
+    setInvitations(data?.invitations || []);
+    setInvitationsLoading(false);
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteForm.email) return;
+    setInviteSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("invite-client", {
+        body: { session_token: getToken(), email: inviteForm.email, name: inviteForm.name },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: "Invitation sent", description: `Invite link created for ${inviteForm.email}` });
+      setInviteFormOpen(false);
+      setInviteForm({ email: "", name: "" });
+      fetchInvitations();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setInviteSending(false);
+  };
+
+  const copyInviteLink = (salt: string) => {
+    const link = `${window.location.origin}/apply/${salt}`;
+    navigator.clipboard.writeText(link);
+    toast({ title: "Link copied to clipboard" });
   };
 
   const handleKycAction = async (userId: string, status: string) => {
@@ -323,10 +376,12 @@ export default function BackOffice() {
           if (v === "documents") fetchDocuments();
           if (v === "research") fetchResearch();
           if (v === "kyc") fetchKycClients();
+          if (v === "invitations") fetchInvitations();
         }}>
           <TabsList className="flex-wrap">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="clients"><UserRoundCog className="h-4 w-4 mr-1" />Clients</TabsTrigger>
+            <TabsTrigger value="invitations"><Mail className="h-4 w-4 mr-1" />Invitations</TabsTrigger>
             <TabsTrigger value="roles"><Shield className="h-4 w-4 mr-1" />Roles</TabsTrigger>
             <TabsTrigger value="deposits"><DollarSign className="h-4 w-4 mr-1" />Deposits</TabsTrigger>
             <TabsTrigger value="documents"><FileText className="h-4 w-4 mr-1" />Documents</TabsTrigger>
@@ -368,7 +423,67 @@ export default function BackOffice() {
             </Card>
           </TabsContent>
 
-          {/* Roles */}
+          {/* Invitations */}
+          <TabsContent value="invitations" className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Client Invitations</CardTitle>
+                  <p className="text-sm text-muted-foreground">Send invite links and track onboarding status</p>
+                </div>
+                <Button onClick={() => setInviteFormOpen(true)}><Mail className="h-4 w-4 mr-2" />Send Invite</Button>
+              </CardHeader>
+              <CardContent>
+                {invitationsLoading ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                ) : invitations.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">No invitations sent yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="text-left p-3 font-semibold">Email</th>
+                          <th className="text-left p-3 font-semibold">Name</th>
+                          <th className="text-left p-3 font-semibold">Code</th>
+                          <th className="text-left p-3 font-semibold">Status</th>
+                          <th className="text-left p-3 font-semibold">Sent</th>
+                          <th className="text-right p-3 font-semibold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {invitations.map(inv => (
+                          <tr key={inv.code} className="border-t">
+                            <td className="p-3 text-sm">{inv.user_email}</td>
+                            <td className="p-3 text-sm">{inv.user_name || "—"}</td>
+                            <td className="p-3 font-mono text-sm">{inv.code}</td>
+                            <td className="p-3">
+                              <Badge variant={
+                                inv.status === "used" ? "default" :
+                                new Date(inv.expires_at) < new Date() ? "destructive" : "secondary"
+                              } className="capitalize">
+                                {inv.status === "used" ? "Used" :
+                                 new Date(inv.expires_at) < new Date() ? "Expired" : inv.status || "Pending"}
+                              </Badge>
+                            </td>
+                            <td className="p-3 text-sm">{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : "—"}</td>
+                            <td className="p-3 text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="ghost" onClick={() => copyInviteLink(inv.salt)} title="Copy invite link">
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="roles" className="space-y-6">
             <Card>
               <CardHeader>
@@ -697,6 +812,27 @@ export default function BackOffice() {
               <Textarea value={researchForm.content} onChange={(e) => setResearchForm(p => ({ ...p, content: e.target.value }))} rows={6} placeholder="Full content..." />
             </div>
             <Button onClick={handlePublishResearch} className="w-full" disabled={!researchForm.title}>Publish</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Invite Dialog */}
+      <Dialog open={inviteFormOpen} onOpenChange={setInviteFormOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Send Client Invitation</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Email Address</Label>
+              <Input type="email" value={inviteForm.email} onChange={(e) => setInviteForm(p => ({ ...p, email: e.target.value }))} placeholder="client@example.com" />
+            </div>
+            <div>
+              <Label>Full Name (optional)</Label>
+              <Input value={inviteForm.name} onChange={(e) => setInviteForm(p => ({ ...p, name: e.target.value }))} placeholder="John Smith" />
+            </div>
+            <Button onClick={handleSendInvite} className="w-full" disabled={!inviteForm.email || inviteSending}>
+              {inviteSending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Send Invitation
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

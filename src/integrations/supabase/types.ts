@@ -450,6 +450,8 @@ export type Database = {
           code: string
           created_at: string | null
           expires_at: string
+          invited_by: string | null
+          salt: string
           status: string | null
           used_at: string | null
           user_email: string
@@ -459,6 +461,8 @@ export type Database = {
           code: string
           created_at?: string | null
           expires_at: string
+          invited_by?: string | null
+          salt?: string
           status?: string | null
           used_at?: string | null
           user_email: string
@@ -468,6 +472,8 @@ export type Database = {
           code?: string
           created_at?: string | null
           expires_at?: string
+          invited_by?: string | null
+          salt?: string
           status?: string | null
           used_at?: string | null
           user_email?: string
