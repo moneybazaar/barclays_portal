@@ -67,6 +67,17 @@ interface KycClient {
   kyc_documents: { id: string; title: string; doc_type: string; created_at: string; file_path: string | null }[];
 }
 
+interface Invitation {
+  code: string;
+  salt: string;
+  user_email: string;
+  user_name: string | null;
+  status: string | null;
+  created_at: string | null;
+  expires_at: string;
+  used_at: string | null;
+}
+
 export default function BackOffice() {
   const { userRole, loading, user, username, signOut } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
