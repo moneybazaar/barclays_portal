@@ -110,6 +110,13 @@ export default function BackOffice() {
   const [kycClients, setKycClients] = useState<KycClient[]>([]);
   const [kycLoading, setKycLoading] = useState(false);
 
+  // Invitations
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [inviteFormOpen, setInviteFormOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: "", name: "" });
+  const [inviteSending, setInviteSending] = useState(false);
+
   const getToken = () => localStorage.getItem("barclays_session_token");
 
   useEffect(() => {
