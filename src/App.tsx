@@ -17,6 +17,7 @@ import BackOffice from "./pages/BackOffice";
 import FxHeatmap from "./pages/FxHeatmap";
 import KycUpload from "./pages/KycUpload";
 import ResetPassword from "./pages/ResetPassword";
+import Apply from "./pages/Apply";
 import NotFound from "./pages/NotFound";
 import ImportantInformation from "./pages/info/ImportantInformation";
 import PrivacyNotice from "./pages/info/PrivacyNotice";
