@@ -1,116 +1,114 @@
+## Plan: Combined Client Onboarding + Email Invites + Docker Deployment
 
+### Status: Part A — ✅ Implemented
 
-## Plan: Enable Login Flow and Minimal Operations
+#### Completed Items
 
-### Current State
+1. ✅ **Database migration**: Added `salt` (TEXT, NOT NULL, UNIQUE) and `invited_by` (TEXT) columns to `pending_invitations`
+2. ✅ **`send-email` edge function**: Provider-agnostic email sender (supports Resend, SMTP, dry-run mode)
+3. ✅ **`invite-client` edge function**: Admin generates salt, stores invite, sends branded email with `/apply/{salt}` link
+4. ✅ **`register-client` edge function**: Validates salt, creates `app_users` + `app_user_roles`, marks invite used
+5. ✅ **`/apply/:code` page**: Multi-step onboarding form (Personal → Financial → Compliance → Security)
+6. ✅ **BackOffice Invitations tab**: Send invites, view invitation status table, copy invite links
+7. ✅ **Route added** to `App.tsx`
+8. ✅ **`admin-clients`** updated with `list-invitations` action
+9. ✅ All 4 edge functions deployed
 
-- **Database is empty**: No `app_users`, no `app_sessions`, no `holdings` data
-- **No `role` column** on `app_users` table - `useAuth` hardcodes everyone as `"client"`
-- **Auth depends on external portal** (`application.barclays-ib.app`) which verifies codes and creates sessions
-- **Holdings use Supabase Auth RLS** (`auth.uid()`) but login creates `app_users` records, not Supabase Auth users - so holdings queries will always fail
-- **Market data fallback shows $0.00** when Finnhub API fails
-- **2FA toggle in Settings** does nothing - just local state
-- **Dashboard links to `/research`** which was removed from navigation
-- **Settings page** uses hardcoded mock data instead of the logged-in user's info
+#### Secrets Still Needed (for email delivery)
 
-### What Needs to Happen
+Email sending currently runs in **dry-run mode** (logged but not sent). To enable actual delivery:
+- `EMAIL_PROVIDER` — set to `resend` or `smtp`
+- `RESEND_API_KEY` (if using Resend) or `SMTP_HOST` + `SMTP_USER` + `SMTP_PASS` + `SMTP_PORT` (if using SMTP)
 
-#### 1. Add `role` column to `app_users`
+Invite links still work without email — admins can copy the link from the Invitations tab.
 
-Add a `role` column (default `'client'`) so the auth-callback can set roles and `useAuth` can read them.
+---
 
-**Database migration:**
-```sql
-ALTER TABLE app_users ADD COLUMN role VARCHAR DEFAULT 'client';
+### Part B — Docker Production Deployment (Reference Only)
+
+This section is for VPS deployment and is NOT implemented in Lovable code.
+
+#### Architecture
+
+```
+Lovable Cloud (backend)
+├── Edge Functions (login, validate-session, invite-client, send-email, register-client, admin-clients, etc.)
+└── Database (app_users, pending_invitations, holdings, deposits, etc.)
+
+VPS + Cloudflare (frontend serving)
+├── secure.barclays-ib.app → portal-app container (Nginx serving Vite dist/)
+├── bonds.barclays-ib.app → bonds-app container
+└── Cloudflare Worker → X-Salt-Hash header extraction for /secure/{salt}
 ```
 
-#### 2. Seed test accounts
+#### Dockerfile (portal — static Vite SPA)
 
-Insert the two test users directly into the database:
+```dockerfile
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_PUBLISHABLE_KEY
+ARG VITE_SUPABASE_PROJECT_ID
+RUN npm run build
 
-- `client@yopmail.com` as role `client`
-- `admin@yopmail.com` as role `admin`
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx-spa.conf /etc/nginx/conf.d/default.conf
+EXPOSE 3000
+```
 
-Create active sessions for both so they can log in immediately without needing the external portal.
+#### Docker Compose Service
 
-#### 3. Update `useAuth.tsx` to support direct session login
+```yaml
+portal-app:
+  build:
+    context: ./portal
+    args:
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+      VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID}
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+  networks:
+    - app-network
+```
 
-- Read `role` from `app_users` instead of hardcoding `"client"`
-- Also check `localStorage` for user data stored during session creation
-- This allows the seeded sessions to work
+#### Cloudflare Worker
 
-#### 4. Update `auth-callback` edge function
-
-- Set the `role` field when upserting users (default to `'client'`, or read from portal response)
-
-#### 5. Fix market data fallback
-
-Update `supabase/functions/market-data/index.ts` to return realistic static prices instead of zeros when Finnhub fails:
-- S&P 500: ~$520
-- FTSE 100: ~$35
-- EUR/USD: ~$105
-- Gold: ~$215
-
-#### 6. Remove 2FA from Settings
-
-Since 2FA is not functional (it's just a local toggle), remove the entire Security card from Settings as requested.
-
-#### 7. Fix Dashboard `/research` link
-
-Change the "View Details" link on Dashboard positions table from `/research` to `/investments`.
-
-#### 8. Remove `/research` route from App.tsx
-
-Clean up the dead route since Research Portal was removed.
-
-#### 9. Fix Settings to use logged-in user data
-
-Update Settings page to read user info from `useAuth` instead of hardcoded "John Smith" data.
-
-#### 10. Fix holdings RLS policies
-
-The holdings table uses `auth.uid()` for RLS, but the custom auth system creates `app_users` records (not Supabase Auth users). This means holdings will never load. Options:
-- Update RLS policies to work with the custom `app_sessions` token system (matching `app_users` to `app_sessions`)
-- Or seed holdings using the service role for demo purposes
-
-The plan will update the RLS policies on `holdings` to use the custom session token pattern (same as `app_users` and `app_sessions` tables), so holdings actually work for logged-in users.
-
----
-
-### Technical Details
-
-**Files to modify:**
-
-| File | Change |
-|------|--------|
-| `src/hooks/useAuth.tsx` | Read `role` from `app_users` data; support localStorage fallback |
-| `src/pages/Settings.tsx` | Remove 2FA section; load user data from `useAuth` |
-| `src/pages/Dashboard.tsx` | Change `/research` link to `/investments` |
-| `src/App.tsx` | Remove `/research` route import and route |
-| `supabase/functions/auth-callback/index.ts` | Include `role` in upsert |
-| `supabase/functions/market-data/index.ts` | Realistic fallback prices |
-
-**Database changes:**
-
-1. Add `role` column to `app_users`
-2. Insert test users: `client@yopmail.com` (client) and `admin@yopmail.com` (admin) with active sessions
-3. Update `holdings` RLS policies to use the custom session token pattern instead of `auth.uid()`
-4. Seed demo holdings for `client@yopmail.com`
-
-**New edge function:**
-
-Create `seed-test-user` to generate sessions for test accounts, returning tokens that can be stored in localStorage for immediate login.
+```javascript
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request));
+});
+async function handleRequest(request) {
+  const url = new URL(request.url);
+  const match = url.pathname.match(/^\/secure\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    const headers = new Headers(request.headers);
+    headers.set('X-Salt-Hash', match[1]);
+    return fetch(new Request(request, { headers }));
+  }
+  return fetch(request);
+}
+```
 
 ---
 
-### Implementation Order
+### Previous Plan Items (from initial plan)
 
-1. Database migration: add `role` column, update holdings RLS
-2. Seed test users + sessions + demo holdings
-3. Update `useAuth.tsx` for role support
-4. Update `auth-callback` edge function
-5. Fix market data fallback prices
-6. Remove 2FA from Settings, wire up user data
-7. Remove `/research` route and fix Dashboard link
-8. Deploy edge functions and test both accounts
+These items from the original plan remain relevant:
 
+- ✅ `role` support via `app_user_roles` table (already implemented)
+- ✅ Test accounts seeded (client@yopmail.com, admin@yopmail.com)
+- ✅ `useAuth.tsx` reads role from validate-session
+- ✅ Market data fallback prices fixed
+- ✅ 2FA removed from Settings
+- ✅ Dashboard `/research` link fixed
+- ✅ Settings uses logged-in user data
+- ✅ Holdings managed via edge functions (bypassing RLS)
